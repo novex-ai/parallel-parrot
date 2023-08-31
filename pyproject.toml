@@ -1,13 +1,17 @@
 [tool.poetry]
 name = "parallel-parrot"
 version = "0.0.1"
-description = ""
-authors = ["Brad Ito <brad@novex.ai>"]
+description = "A library for easily and efficiently using LLMs on tabular data"
+authors = ["Brad Ito <phlogisticfugu@gmail.com>"]
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8"
+aiohttp = "^3.8.5"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
 
 [build-system]
 requires = ["poetry-core"]
