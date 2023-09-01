@@ -6,7 +6,6 @@ from aiohttp_retry import RetryClient, JitterRetry
 from pydantic import BaseModel
 
 
-
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
@@ -39,13 +38,14 @@ def create_openai_http_headers(config: OpenAIChatCompletionConfig):
     return headers
 
 
-def create_chat_completion_client_session(config: OpenAIChatCompletionConfig, use_retries: bool = True) -> ClientSessionType:
+def create_chat_completion_client_session(
+    config: OpenAIChatCompletionConfig, use_retries: bool = True
+) -> ClientSessionType:
     headers = create_openai_http_headers(config)
+    client_timeout = ClientTimeout(total=OPENAI_REQUEST_TIMEOUT_SECONDS)
     client_session = ClientSession(
         headers=headers,
-        timeout=ClientTimeout(
-            total=OPENAI_REQUEST_TIMEOUT_SECONDS
-        )
+        timeout=client_timeout,
     )
     if not use_retries:
         return client_session
@@ -62,35 +62,48 @@ def create_chat_completion_client_session(config: OpenAIChatCompletionConfig, us
         random_interval_size=5.0,
         retry_all_server_errors=True,
     )
-    retry_client_session = RetryClient(client_session=client_session, retry_options=retry_options)
+    retry_client_session = RetryClient(
+        client_session=client_session, retry_options=retry_options
+    )
     return retry_client_session
 
 
-async def do_chat_completion(client_session: ClientSessionType, config: OpenAIChatCompletionConfig, prompt: str, system_message: Optional[str] = None):
+async def do_chat_completion(
+    client_session: ClientSessionType,
+    config: OpenAIChatCompletionConfig,
+    prompt: str,
+    system_message: Optional[str] = None,
+):
     payload = create_chat_completion_request_payload(config, prompt, system_message)
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as resp:
         if resp.status == 429:
-            retry_after = int(resp.headers.get('retry-after', '0'))
+            retry_after = int(resp.headers.get("retry-after", "0"))
             if retry_after > 0:
                 await asyncio.sleep(retry_after)
-            return await do_chat_completion(client_session, config, prompt, system_message)
+            return await do_chat_completion(
+                client_session, config, prompt, system_message
+            )
         resp.raise_for_status()
         return await resp.json()
 
 
 def parse_chat_completion_result(result: dict):
-    if result.get('object') != 'chat.completion':
+    if result.get("object") != "chat.completion":
         raise ValueError(f"Unexpected object type: {result.get('object')}")
-    choices = result.get('choices', [])
+    choices = result.get("choices", [])
     if len(choices) == 0:
         return None
     else:
         choice = choices[0]
-        message = choice.get('message', {})
-        return message.get('content')
+        message = choice.get("message", {})
+        return message.get("content")
 
 
-def create_chat_completion_request_payload(config: OpenAIChatCompletionConfig, prompt: str, system_message: Optional[str] = None):
+def create_chat_completion_request_payload(
+    config: OpenAIChatCompletionConfig,
+    prompt: str,
+    system_message: Optional[str] = None,
+):
     """
     https://platform.openai.com/docs/api-reference/chat/create
     """
@@ -116,13 +129,7 @@ def create_chat_completion_request_payload(config: OpenAIChatCompletionConfig, p
         payload["user"] = config.user
     messages = []
     if system_message:
-        messages.append({
-            "role": "system",
-            "content": system_message
-        })
-    messages.append({
-        "role": "user",
-        "content": prompt
-    })
+        messages.append({"role": "system", "content": system_message})
+    messages.append({"role": "user", "content": prompt})
     payload["messages"] = messages
     return payload

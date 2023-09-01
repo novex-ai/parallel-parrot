@@ -15,6 +15,10 @@ aiohttp-retry = "^2.8.3"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310']
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
