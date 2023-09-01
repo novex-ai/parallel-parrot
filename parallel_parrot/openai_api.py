@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
+OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 300.0
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 
@@ -47,7 +48,7 @@ def create_chat_completion_client_session(config: OpenAIChatCompletionConfig, us
     )
     if not use_retries:
         return client_session
-    retry_options = JitterRetry(attempts=5, max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS)
+    retry_options = JitterRetry(attempts=OPENAI_TOTAL_RETRIES, max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS)
     retry_client_session = RetryClient(client_session=client_session, retry_options=retry_options)
     return retry_client_session
 
