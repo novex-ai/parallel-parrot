@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional, Union
 
 from aiohttp import ClientSession, ClientTimeout
@@ -8,7 +9,7 @@ from pydantic import BaseModel
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
 OPENAI_TOTAL_RETRIES = 10
-OPENAI_TOTAL_TIMEOUT_SECONDS = 300.0
+OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 
 ClientSessionType = Union[ClientSession, RetryClient]
@@ -48,7 +49,19 @@ def create_chat_completion_client_session(config: OpenAIChatCompletionConfig, us
     )
     if not use_retries:
         return client_session
-    retry_options = JitterRetry(attempts=OPENAI_TOTAL_RETRIES, max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS)
+    # Retry error codes which do not indicate a problem with the request itself. Using jitter to avoid thundering herd.
+    # The 409 code (openai.error.TryAgain) is returned when the model needs to warm up.
+    # https://github.com/openai/openai-python/blob/1be14ee34a0f8e42d3f9aa5451aa4cb161f1781f/openai/api_requestor.py#L401
+    # https://github.com/inyutin/aiohttp_retry/blob/master/aiohttp_retry/retry_options.py#L158
+    retry_options = JitterRetry(
+        attempts=OPENAI_TOTAL_RETRIES,
+        start_timeout=1,
+        max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
+        factor=2.0,
+        statuses=[409, 500],
+        random_interval_size=5.0,
+        retry_all_server_errors=True,
+    )
     retry_client_session = RetryClient(client_session=client_session, retry_options=retry_options)
     return retry_client_session
 
@@ -56,6 +69,11 @@ def create_chat_completion_client_session(config: OpenAIChatCompletionConfig, us
 async def do_chat_completion(client_session: ClientSessionType, config: OpenAIChatCompletionConfig, prompt: str, system_message: Optional[str] = None):
     payload = create_chat_completion_request_payload(config, prompt, system_message)
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as resp:
+        if resp.status == 429:
+            retry_after = int(resp.headers.get('retry-after', '0'))
+            if retry_after > 0:
+                await asyncio.sleep(retry_after)
+            return await do_chat_completion(client_session, config, prompt, system_message)
         resp.raise_for_status()
         return await resp.json()
 
