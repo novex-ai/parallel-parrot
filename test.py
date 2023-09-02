@@ -1,16 +1,15 @@
 import os
 
-from parallel_parrot import sync_run
-from parallel_parrot.openai_api import OpenAIChatCompletionConfig, parrot_openai_chat_completion_dictlist
+import parallel_parrot as pp
 
 
-config = OpenAIChatCompletionConfig(
+config = pp.OpenAIChatCompletionConfig(
     openai_api_key=os.environ["OPENAI_API_KEY"],
 )
 
 
 if __name__ == '__main__':
-    output = sync_run(parrot_openai_chat_completion_dictlist(
+    output = pp.sync_run(pp.parrot_openai_chat_completion_dictlist(
         config=config,
         input_list=[
             {"input": "what is 1+1?"},
