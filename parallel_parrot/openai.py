@@ -15,7 +15,7 @@ async def parrot_openai_chat_completion_pandas(
     prompt_template: str,
     output_key: str,
     system_message: str = None,
-):
+) -> tuple["pd.DataFrame", dict]:
     if not pd:
         raise ImportError("pandas is not installed. Please install pandas to use this function.")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
@@ -37,7 +37,7 @@ async def parrot_openai_chat_completion_dictlist(
     prompt_template: str,
     output_key: str,
     system_message: str = None,
-):
+) -> tuple[list[dict], dict]:
     prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await parallel_openai_chat_completion(
         config=config,

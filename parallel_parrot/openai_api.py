@@ -122,7 +122,7 @@ def create_chat_completion_request_payload(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
-):
+) -> dict:
     """
     https://platform.openai.com/docs/api-reference/chat/create
     """
@@ -154,7 +154,7 @@ def create_chat_completion_request_payload(
     return payload
 
 
-def create_openai_http_headers(config: OpenAIChatCompletionConfig):
+def create_openai_http_headers(config: OpenAIChatCompletionConfig) -> dict:
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {config.openai_api_key}",
