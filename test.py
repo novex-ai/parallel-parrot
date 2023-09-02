@@ -1,7 +1,8 @@
 import os
-import asyncio
+
+from parallel_parrot import sync_run
 from parallel_parrot.openai_api import OpenAIChatCompletionConfig
-from parallel_parrot.parrot import sync_run, parrot_openai_chat_completion
+from parallel_parrot.parrot import parrot_openai_chat_completion
 
 
 config = OpenAIChatCompletionConfig(

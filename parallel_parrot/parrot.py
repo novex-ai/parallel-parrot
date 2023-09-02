@@ -11,16 +11,6 @@ from .openai_api import (
 )
 
 
-def sync_run(runnable_coro):
-    loop = uvloop.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(runnable_coro)
-    finally:
-        loop.close()
-
-
-
 async def parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     input_list: list[dict],
