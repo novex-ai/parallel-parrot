@@ -7,10 +7,18 @@ import uvloop
 
 from .openai_api import (
     OpenAIChatCompletionConfig,
-    create_chat_completion_client_session,
-    do_chat_completion,
-    parse_chat_completion_result,
+    parallel_openai_chat_completion,
 )
+
+
+def sync_run(runnable_coro):
+    loop = uvloop.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(runnable_coro)
+    finally:
+        loop.close()
+
 
 
 async def parrot_openai_chat_completion(
@@ -24,16 +32,15 @@ async def parrot_openai_chat_completion(
     prompts = [
         t.substitute(input_dict) for input_dict in input_list
     ]
-    with create_chat_completion_client_session(config) as client_session:
-        tasks = [
-            asyncio.create_task(do_chat_completion(client_session, config, prompt, system_message))
-            for prompt in prompts
-        ]
-        results = await asyncio.gather(*tasks)
+    (model_outputs, usage_stats_sum) = await parallel_openai_chat_completion(
+        config=config,
+        prompts=prompts,
+        system_message=system_message,
+    )
     output_list = [
         copy.copy(input_dict)
         for input_dict in input_list
     ]
-    for input_dict, result in zip(output_list, results):
-        input_dict[output_key] = parse_chat_completion_result(result)
-    return output_list
+    for input_dict, model_output in zip(output_list, model_outputs):
+        input_dict[output_key] = model_output
+    return output_list, usage_stats_sum

@@ -1,4 +1,5 @@
 import asyncio
+from functools import reduce
 from typing import Optional, Union
 
 from aiohttp import ClientSession, ClientTimeout
@@ -10,6 +11,11 @@ OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_EMPTY_USAGE_STATS = {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+}
 
 ClientSessionType = Union[ClientSession, RetryClient]
 
@@ -28,14 +34,30 @@ class OpenAIChatCompletionConfig(BaseModel):
     user: Optional[str] = None
 
 
-def create_openai_http_headers(config: OpenAIChatCompletionConfig):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {config.openai_api_key}",
-    }
-    if config.openai_org_id:
-        headers["OpenAI-Organization"] = config.openai_org_id
-    return headers
+async def parallel_openai_chat_completion(
+    config: OpenAIChatCompletionConfig,
+    prompts: list[str],
+    system_message: str = None,
+)-> tuple[list[Optional[str]], dict]:
+    async with create_chat_completion_client_session(config, use_retries=False) as client_session:
+        tasks = [
+            asyncio.create_task(do_chat_completion(
+                client_session=client_session,
+                config=config,
+                prompt=prompt,
+                system_message=system_message,
+            ))
+            for prompt in prompts
+        ]
+        result_tuples = await asyncio.gather(*tasks)
+    unzipped_results = list(zip(*result_tuples))
+    model_outputs = unzipped_results[0]
+    usage_stats_list = unzipped_results[1]
+    usage_stats_sum = reduce(
+        lambda x, y: {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)},
+        usage_stats_list
+    )
+    return (model_outputs, usage_stats_sum)
 
 
 def create_chat_completion_client_session(
@@ -73,7 +95,9 @@ async def do_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
-):
+) -> tuple[Optional[str], dict]:
+    if not prompt:
+        return (None, OPENAI_EMPTY_USAGE_STATS)
     payload = create_chat_completion_request_payload(config, prompt, system_message)
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as resp:
         if resp.status == 429:
@@ -84,19 +108,25 @@ async def do_chat_completion(
                 client_session, config, prompt, system_message
             )
         resp.raise_for_status()
-        return await resp.json()
+        result = await resp.json()
+        return parse_chat_completion_result(result)
 
 
-def parse_chat_completion_result(result: dict):
+def parse_chat_completion_result(result: dict) -> tuple[Optional[str], dict]:
+    """
+    https://platform.openai.com/docs/api-reference/chat/object
+    """
     if result.get("object") != "chat.completion":
         raise ValueError(f"Unexpected object type: {result.get('object')}")
     choices = result.get("choices", [])
+    usage = result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:
-        return None
+        return (None, usage)
     else:
         choice = choices[0]
         message = choice.get("message", {})
-        return message.get("content")
+        model_output = message.get("content")
+        return (model_output, usage)
 
 
 def create_chat_completion_request_payload(
@@ -133,3 +163,13 @@ def create_chat_completion_request_payload(
     messages.append({"role": "user", "content": prompt})
     payload["messages"] = messages
     return payload
+
+
+def create_openai_http_headers(config: OpenAIChatCompletionConfig):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {config.openai_api_key}",
+    }
+    if config.openai_org_id:
+        headers["OpenAI-Organization"] = config.openai_org_id
+    return headers
