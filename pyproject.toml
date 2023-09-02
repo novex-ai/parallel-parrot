@@ -17,6 +17,10 @@ uvloop = "^0.17.0"
 pytest = "^7.4.0"
 black = "^23.7.0"
 
+
+[tool.poetry.group.extras.dependencies]
+pandas = "*"
+
 [tool.black]
 line-length = 88
 target-version = ['py39', 'py310', 'py311']
