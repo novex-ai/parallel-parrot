@@ -54,7 +54,7 @@ async def parrot_openai_chat_completion_pandas(
         prompts=prompts,
         system_message=system_message,
     )
-    output_df = input_df
+    output_df = input_df.copy()
     output_df[output_key] = model_outputs
     output_df = output_df.astype({output_key: "string"})
     usage_stats_sum = sum_usage_stats(usage_stats_list)
@@ -88,17 +88,15 @@ async def parallel_openai_chat_completion(
         config, use_retries=False
     ) as client_session:
         semaphore = asyncio.Semaphore(OPENAI_NUM_CONCURRENT_REQUESTS)
-        async def do_chat_completion_with_semaphore(prompt):
-            async with semaphore:
-                return await do_chat_completion(
+        tasks = [
+            asyncio.create_task(
+                do_chat_completion(
                     client_session=client_session,
+                    semaphore=semaphore,
                     config=config,
                     prompt=prompt,
                     system_message=system_message,
                 )
-        tasks = [
-            asyncio.create_task(
-                do_chat_completion_with_semaphore(prompt)
             )
             for prompt in prompts
         ]
@@ -141,24 +139,26 @@ def create_chat_completion_client_session(
 
 async def do_chat_completion(
     client_session: ClientSessionType,
+    semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
 ) -> tuple[Optional[str], dict]:
     if not prompt:
         return (None, OPENAI_EMPTY_USAGE_STATS)
-    payload = create_chat_completion_request_payload(config, prompt, system_message)
-    async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as resp:
-        if resp.status == 429:
-            retry_after = int(resp.headers.get("retry-after", "0"))
-            if retry_after > 0:
-                await asyncio.sleep(retry_after)
-            return await do_chat_completion(
-                client_session, config, prompt, system_message
-            )
-        resp.raise_for_status()
-        result = await resp.json()
-        return parse_chat_completion_result(result)
+    async with semaphore:
+        payload = create_chat_completion_request_payload(config, prompt, system_message)
+        async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as resp:
+            if resp.status == 429:
+                retry_after = int(resp.headers.get("retry-after", "0"))
+                if retry_after > 0:
+                    await asyncio.sleep(retry_after)
+                return await do_chat_completion(
+                    client_session, config, prompt, system_message
+                )
+            resp.raise_for_status()
+            result = await resp.json()
+            return parse_chat_completion_result(result)
 
 
 def parse_chat_completion_result(result: dict) -> tuple[Optional[str], dict]:
