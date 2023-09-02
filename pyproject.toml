@@ -11,6 +11,7 @@ python = "^3.9"
 aiohttp = "^3.8.5"
 pydantic = "^2.3.0"
 aiohttp-retry = "^2.8.3"
+uvloop = "^0.17.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
