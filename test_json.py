@@ -45,6 +45,6 @@ Go beyond past customer behavior data and start building forecasts based on accu
         output_key="output",
     ))
     print("-------------------------------")
-    qa_list = pp.auto_explode_dictlist(result_dictlist, "output")
+    qa_list = pp.auto_explode_json_dictlist(result_dictlist, "output")
     print(json.dumps(qa_list, indent=2))
 

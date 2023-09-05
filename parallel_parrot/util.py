@@ -51,7 +51,7 @@ def append_one_to_many_model_outputs_dictlist(
     return output_list
 
 
-def auto_explode_dictlist(data_distlist: list[dict], key: str, delete_source_data: bool = True) -> list[dict]:
+def auto_explode_json_dictlist(data_distlist: list[dict], key: str, delete_source_data: bool = True) -> list[dict]:
     """
     If the value of a key is a list, explode the list into multiple rows
     """
