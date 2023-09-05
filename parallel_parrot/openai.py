@@ -21,23 +21,11 @@ async def parrot_openai_chat_completion_pandas(
     if input_df.empty:
         raise Exception(f"{input_df=} must not be empty")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
-    (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
+    (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        prompt=prompts[0],
+        prompts=prompts,
         system_message=system_message,
     )
-    model_outputs = [model_output]
-    usage_stats_list = [usage_stats]
-    ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
-    if len(prompts) >= 2:
-        (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
-            config=config,
-            prompts=prompts[1:],
-            system_message=system_message,
-            ratelimit_limit_requests=ratelimit_limit_requests,
-        )
-        model_outputs += _model_outputs
-        usage_stats_list += _usage_stats_list
     output_df = input_df.copy()
     output_df[output_key] = model_outputs
     output_df = output_df.astype({output_key: "string"})
@@ -55,6 +43,21 @@ async def parrot_openai_chat_completion_dictlist(
     if len(input_list) == 0:
         raise Exception(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
+    (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
+        config=config,
+        prompts=prompts,
+        system_message=system_message,
+    )
+    output_list = append_model_outputs_dictlist(input_list, model_outputs, output_key)
+    usage_stats_sum = sum_usage_stats(usage_stats_list)
+    return output_list, usage_stats_sum
+
+
+async def _parrot_openai_chat_completion(
+    config: OpenAIChatCompletionConfig,
+    prompts: list[str],
+    system_message: str,
+):
     (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
         config=config,
         prompt=prompts[0],
@@ -72,6 +75,4 @@ async def parrot_openai_chat_completion_dictlist(
         )
         model_outputs += _model_outputs
         usage_stats_list += _usage_stats_list
-    output_list = append_model_outputs_dictlist(input_list, model_outputs, output_key)
-    usage_stats_sum = sum_usage_stats(usage_stats_list)
-    return output_list, usage_stats_sum
+    return (model_outputs, usage_stats_list)
