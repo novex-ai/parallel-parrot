@@ -41,7 +41,7 @@ async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
     system_message: str = None,
-) -> tuple[list[Optional[str]], dict]:
+) -> tuple[list[Optional[str]], list[dict]]:
     async with create_chat_completion_client_session(
         config, use_retries=True
     ) as client_session:
@@ -60,8 +60,8 @@ async def parallel_openai_chat_completion(
         ]
         result_tuples = await asyncio.gather(*tasks)
     unzipped_results = list(zip(*result_tuples))
-    model_outputs = unzipped_results[0]
-    usage_stats_list = unzipped_results[1]
+    model_outputs = list(unzipped_results[0])
+    usage_stats_list = list(unzipped_results[1])
     return (model_outputs, usage_stats_list)
 
 

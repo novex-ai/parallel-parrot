@@ -4,7 +4,7 @@ except ImportError:
     pd = None
 
 
-from .openai_api import parallel_openai_chat_completion
+from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
 from .types import OpenAIChatCompletionConfig
 from .util import input_list_to_prompts, append_model_outputs_dictlist, sum_usage_stats
 
@@ -17,13 +17,25 @@ async def parrot_openai_chat_completion_pandas(
     system_message: str = None,
 ) -> tuple["pd.DataFrame", dict]:
     if not pd:
-        raise ImportError("pandas is not installed. Please install pandas to use this function.")
+        raise Exception("pandas is not installed. Please install pandas to use this function.")
+    if input_df.empty:
+        raise Exception(f"{input_df=} must not be empty")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
-    (model_outputs, usage_stats_list) = await parallel_openai_chat_completion(
+    (model_output, usage_stats) = await single_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        prompt=prompts[0],
         system_message=system_message,
     )
+    model_outputs = [model_output]
+    usage_stats_list = [usage_stats]
+    if len(prompts) >= 2:
+        (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
+            config=config,
+            prompts=prompts[1:],
+            system_message=system_message,
+        )
+        model_outputs += _model_outputs
+        usage_stats_list += _usage_stats_list
     output_df = input_df.copy()
     output_df[output_key] = model_outputs
     output_df = output_df.astype({output_key: "string"})
@@ -38,12 +50,24 @@ async def parrot_openai_chat_completion_dictlist(
     output_key: str,
     system_message: str = None,
 ) -> tuple[list[dict], dict]:
+    if len(input_list) == 0:
+        raise Exception(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
-    (model_outputs, usage_stats_list) = await parallel_openai_chat_completion(
+    (model_output, usage_stats) = await single_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        prompt=prompts[0],
         system_message=system_message,
     )
+    model_outputs = [model_output]
+    usage_stats_list = [usage_stats]
+    if len(prompts) >= 2:
+        (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
+            config=config,
+            prompts=prompts[1:],
+            system_message=system_message,
+        )
+        model_outputs += _model_outputs
+        usage_stats_list += _usage_stats_list
     output_list = append_model_outputs_dictlist(input_list, model_outputs, output_key)
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     return output_list, usage_stats_sum
