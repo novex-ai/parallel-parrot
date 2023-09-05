@@ -1,8 +1,13 @@
 import copy
 from functools import reduce
+import logging
 from string import Template
 import sys
 from typing import Optional
+
+
+logger = logging.getLogger("parallel_parrot")
+logger.addHandler(logging.NullHandler())
 
 
 def input_list_to_prompts(input_list: list[dict], prompt_template: str) -> list[str]:

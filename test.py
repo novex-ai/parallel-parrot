@@ -1,4 +1,5 @@
 import os
+import logging
 
 import parallel_parrot as pp
 
@@ -7,6 +8,7 @@ config = pp.OpenAIChatCompletionConfig(
     openai_api_key=os.environ["OPENAI_API_KEY"],
 )
 
+logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
     output = pp.sync_run(pp.parrot_openai_chat_completion_dictlist(

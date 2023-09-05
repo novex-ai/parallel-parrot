@@ -5,6 +5,7 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import RetryClient, JitterRetry
 
 from .types import ClientSessionType, OpenAIChatCompletionConfig
+from .util import logger
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
@@ -125,23 +126,28 @@ async def _chat_completion_with_ratelimit(
     payload: dict,
     num_ratelimit_retries: int = 0,
 ) -> tuple[Optional[str], dict]:
+    logger.debug(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as response:
+        logger.debug(f"Response {response.status=} from {payload=} {response.headers=}")
         if response.status == 429:
             if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
                 raise Exception(f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}")
             retry_after = int(response.headers.get("retry-after", "0"))
             if retry_after > 0:
-                await asyncio.sleep(retry_after + RATELIMIT_RETRY_SLEEP_SECONDS)
+                sleep_seconds = retry_after + RATELIMIT_RETRY_SLEEP_SECONDS
             else:
-                await asyncio.sleep(RATELIMIT_RETRY_SLEEP_SECONDS)
+                sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
+            logger.debug(f"Sleeping for {sleep_seconds=} due to ratelimit {response.status=} {response.headers=}")
+            await asyncio.sleep(sleep_seconds)
             return await _chat_completion_with_ratelimit(
                 client_session=client_session,
                 payload=payload,
                 num_ratelimit_retries=(num_ratelimit_retries + 1),
             )
         response.raise_for_status()
-        result = await response.json()
-        return parse_chat_completion_result(result)
+        response_result = await response.json()
+        logger.debug(f"Response {response_result=} from {payload=}")
+        return parse_chat_completion_result(response_result)
 
 
 async def do_chat_completion_simple(
@@ -151,10 +157,13 @@ async def do_chat_completion_simple(
     system_message: Optional[str] = None,
 ):
     payload = create_chat_completion_request_payload(config, prompt, system_message)
+    logger.info(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as response:
+        logger.info(f"Response {response.status=} from {payload=} {response.headers=}")
         response.raise_for_status()
-        result = await response.json()
-        (model_output, usage) = parse_chat_completion_result(result)
+        response_result = await response.json()
+        logger.info(f"Response {response_result=} from {payload=}")
+        (model_output, usage) = parse_chat_completion_result(response_result)
         return (model_output, usage, response.headers)
 
 
