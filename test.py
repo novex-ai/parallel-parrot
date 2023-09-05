@@ -6,6 +6,7 @@ import parallel_parrot as pp
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key=os.environ["OPENAI_API_KEY"],
+    n=5,
 )
 
 logging.basicConfig(level=logging.DEBUG)

@@ -1,4 +1,3 @@
-
 QUESTION_FROM_DOCUMENT = """
 Come up with a single question which is best answered by the following document: ${input}
 """

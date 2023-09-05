@@ -38,6 +38,18 @@ def append_model_outputs_dictlist(
     return output_list
 
 
+def append_one_to_many_model_outputs_dictlist(
+    input_list: list[dict], model_outputs: list[list[Optional[str]]], output_key: str
+):
+    output_list = []
+    for input_dict, model_output in zip(input_list, model_outputs):
+        for model_output_item in model_output:
+            output_dict = copy.copy(input_dict)
+            output_dict[output_key] = model_output_item
+            output_list.append(output_dict)
+    return output_list
+
+
 def sum_usage_stats(usage_stats_list: list[dict]) -> dict:
     return reduce(
         lambda x, y: {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)},

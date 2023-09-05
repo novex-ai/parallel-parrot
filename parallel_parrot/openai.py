@@ -6,7 +6,13 @@ except ImportError:
 
 from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
 from .types import ParallelParrotError, OpenAIChatCompletionConfig
-from .util import input_list_to_prompts, append_model_outputs_dictlist, sum_usage_stats
+from .util import (
+    logger,
+    input_list_to_prompts,
+    append_model_outputs_dictlist,
+    append_one_to_many_model_outputs_dictlist,
+    sum_usage_stats,
+)
 
 
 async def parrot_openai_chat_completion_pandas(
@@ -30,6 +36,12 @@ async def parrot_openai_chat_completion_pandas(
     )
     output_df = input_df.copy()
     output_df[output_key] = model_outputs
+    if config.n is not None and config.n > 1:
+        logger.info(
+            "Output may have more rows than input"
+            f" because {config.n=} is greater than 1"
+        )
+        output_df = output_df.explode(output_key)
     output_df = output_df.astype({output_key: "string"})
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     return output_df, usage_stats_sum
@@ -50,7 +62,18 @@ async def parrot_openai_chat_completion_dictlist(
         prompts=prompts,
         system_message=system_message,
     )
-    output_list = append_model_outputs_dictlist(input_list, model_outputs, output_key)
+    if config.n is not None and config.n > 1:
+        logger.info(
+            "Output may have more rows than input"
+            f" because {config.n=} is greater than 1"
+        )
+        output_list = append_one_to_many_model_outputs_dictlist(
+            input_list, model_outputs, output_key
+        )
+    else:
+        output_list = append_model_outputs_dictlist(
+            input_list, model_outputs, output_key
+        )
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     return output_list, usage_stats_sum
 

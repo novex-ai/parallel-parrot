@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Union
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import RetryClient, JitterRetry
@@ -178,7 +178,9 @@ async def do_chat_completion_simple(
         return (model_output, usage, response.headers)
 
 
-def parse_chat_completion_result(response_result: dict) -> tuple[Optional[str], dict]:
+def parse_chat_completion_result(
+    response_result: dict,
+) -> tuple[Union[None, str, list], dict]:
     """
     https://platform.openai.com/docs/api-reference/chat/object
     """
@@ -190,7 +192,7 @@ def parse_chat_completion_result(response_result: dict) -> tuple[Optional[str], 
     usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:
         return (None, usage)
-    else:
+    elif len(choices) == 1:
         choice = choices[0]
         message = choice.get("message", {})
         model_output = message.get("content")
@@ -198,6 +200,17 @@ def parse_chat_completion_result(response_result: dict) -> tuple[Optional[str], 
         if finish_reason != "stop":
             logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
         return (model_output, usage)
+    else:
+        messages = [choice.get("message", {}) for choice in choices]
+        model_outputs = set()
+        for message in messages:
+            finish_reason = message.get("finish_reason")
+            if finish_reason != "stop":
+                logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
+            model_output = message.get("content")
+            if model_output:
+                model_outputs.add(model_output)
+        return (list(model_outputs), usage)
 
 
 def create_chat_completion_request_payload(
