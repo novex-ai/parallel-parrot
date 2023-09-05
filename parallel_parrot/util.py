@@ -5,6 +5,8 @@ from string import Template
 import sys
 from typing import Optional
 
+from .types import ParallelParrotError
+
 
 logger = logging.getLogger(__name__.split(".")[0])
 logger.addHandler(logging.NullHandler())
@@ -12,15 +14,15 @@ logger.addHandler(logging.NullHandler())
 
 def input_list_to_prompts(input_list: list[dict], prompt_template: str) -> list[str]:
     if len(input_list) == 0:
-        raise ValueError(f"Empty {input_list=}")
+        raise ParallelParrotError(f"Empty {input_list=}")
     t = Template(prompt_template)
     if sys.version_info >= (3, 11):
         if not t.is_valid():
-            raise ValueError(f"Invalid template {prompt_template=}")
+            raise ParallelParrotError(f"Invalid template {prompt_template=}")
         identifiers = t.get_identifiers()
         first_input_dict = input_list[0]
         if set(identifiers) > set(first_input_dict.keys()):
-            raise ValueError(
+            raise ParallelParrotError(
                 f"Template identifiers not in input list {first_input_dict=} {prompt_template=}"
             )
     prompts = [t.substitute(input_dict) for input_dict in input_list]

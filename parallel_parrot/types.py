@@ -5,6 +5,10 @@ from aiohttp_retry import RetryClient
 from pydantic import BaseModel
 
 
+class ParallelParrotError(Exception):
+    pass
+
+
 ClientSessionType = Union[ClientSession, RetryClient]
 
 

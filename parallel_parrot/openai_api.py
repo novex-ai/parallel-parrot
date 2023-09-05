@@ -4,7 +4,7 @@ from typing import Optional
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import RetryClient, JitterRetry
 
-from .types import ClientSessionType, OpenAIChatCompletionConfig
+from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
 from .util import logger
 
 
@@ -136,7 +136,7 @@ async def _chat_completion_with_ratelimit(
         logger.debug(f"Response {response.status=} from {payload=} {response.headers=}")
         if response.status == 429:
             if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
-                raise Exception(
+                raise ParallelParrotError(
                     f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
                 )
             retry_after = int(response.headers.get("retry-after", "0"))
@@ -183,7 +183,9 @@ def parse_chat_completion_result(response_result: dict) -> tuple[Optional[str], 
     https://platform.openai.com/docs/api-reference/chat/object
     """
     if response_result.get("object") != "chat.completion":
-        raise ValueError(f"Unexpected object type: {response_result.get('object')}")
+        raise ParallelParrotError(
+            f"Unexpected object type: {response_result.get('object')}"
+        )
     choices = response_result.get("choices", [])
     usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:

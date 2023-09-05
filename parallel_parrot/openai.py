@@ -5,7 +5,7 @@ except ImportError:
 
 
 from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
-from .types import OpenAIChatCompletionConfig
+from .types import ParallelParrotError, OpenAIChatCompletionConfig
 from .util import input_list_to_prompts, append_model_outputs_dictlist, sum_usage_stats
 
 
@@ -17,11 +17,11 @@ async def parrot_openai_chat_completion_pandas(
     system_message: str = None,
 ) -> tuple["pd.DataFrame", dict]:
     if not pd:
-        raise Exception(
+        raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
     if input_df.empty:
-        raise Exception(f"{input_df=} must not be empty")
+        raise ParallelParrotError(f"{input_df=} must not be empty")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
@@ -43,7 +43,7 @@ async def parrot_openai_chat_completion_dictlist(
     system_message: str = None,
 ) -> tuple[list[dict], dict]:
     if len(input_list) == 0:
-        raise Exception(f"{input_list=} must not be empty")
+        raise ParallelParrotError(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
