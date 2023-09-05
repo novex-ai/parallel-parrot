@@ -1,4 +1,5 @@
 import copy
+import json
 from functools import reduce
 import logging
 from string import Template
@@ -47,6 +48,31 @@ def append_one_to_many_model_outputs_dictlist(
             output_dict = copy.copy(input_dict)
             output_dict[output_key] = model_output_item
             output_list.append(output_dict)
+    return output_list
+
+
+def auto_explode_dictlist(data_distlist: list[dict], key: str, delete_source_data: bool = True) -> list[dict]:
+    """
+    If the value of a key is a list, explode the list into multiple rows
+    """
+    output_list = []
+    for data_dict in data_distlist:
+        value = data_dict.get(key)
+        appended_data = False
+        try:
+            row_dictlist = json.loads(value)
+            if isinstance(row_dictlist, list):
+                for row_dict in row_dictlist:
+                    output_dict = copy.copy(data_dict)
+                    output_dict.update(row_dict)
+                    if delete_source_data:
+                        del output_dict[key]
+                    output_list.append(output_dict)
+                appended_data = True
+        except:
+            pass
+        if not appended_data:
+            output_list.append(data_dict)
     return output_list
 
 
