@@ -10,7 +10,7 @@ from .types import ClientSessionType, OpenAIChatCompletionConfig
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
-OPENAI_NUM_CONCURRENT_REQUESTS = 20
+MAX_NUM_CONCURRENT_REQUESTS = 1000
 MAX_NUM_RATELIMIT_RETRIES = 10
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_EMPTY_USAGE_STATS = {
@@ -41,11 +41,18 @@ async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
     system_message: str = None,
+    ratelimit_limit_requests: str = None,
 ) -> tuple[list[Optional[str]], list[dict]]:
+    if ratelimit_limit_requests:
+        # use half of the available capacity at a time, up until the fileshandle system limit
+        # https://platform.openai.com/docs/guides/rate-limits/overview
+        num_concurrent_requests = min(round(int(ratelimit_limit_requests) / 2), MAX_NUM_CONCURRENT_REQUESTS)
+    else:
+        num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
     async with create_chat_completion_client_session(
         config, use_retries=True
     ) as client_session:
-        semaphore = asyncio.Semaphore(OPENAI_NUM_CONCURRENT_REQUESTS)
+        semaphore = asyncio.Semaphore(num_concurrent_requests)
         tasks = [
             asyncio.create_task(
                 do_chat_completion_with_semaphore(
@@ -144,7 +151,8 @@ async def do_chat_completion_simple(
     async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as response:
         response.raise_for_status()
         result = await response.json()
-        return parse_chat_completion_result(result)
+        (model_output, usage) = parse_chat_completion_result(result)
+        return (model_output, usage, response.headers)
 
 
 def parse_chat_completion_result(result: dict) -> tuple[Optional[str], dict]:
