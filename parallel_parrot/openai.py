@@ -17,7 +17,9 @@ async def parrot_openai_chat_completion_pandas(
     system_message: str = None,
 ) -> tuple["pd.DataFrame", dict]:
     if not pd:
-        raise Exception("pandas is not installed. Please install pandas to use this function.")
+        raise Exception(
+            "pandas is not installed. Please install pandas to use this function."
+        )
     if input_df.empty:
         raise Exception(f"{input_df=} must not be empty")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)

@@ -48,7 +48,9 @@ async def parallel_openai_chat_completion(
     if ratelimit_limit_requests:
         # use half of the available capacity at a time, up until the fileshandle system limit
         # https://platform.openai.com/docs/guides/rate-limits/overview
-        num_concurrent_requests = min(round(int(ratelimit_limit_requests) / 2), MAX_NUM_CONCURRENT_REQUESTS)
+        num_concurrent_requests = min(
+            round(int(ratelimit_limit_requests) / 2), MAX_NUM_CONCURRENT_REQUESTS
+        )
     else:
         num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
     async with create_chat_completion_client_session(
@@ -75,7 +77,8 @@ async def parallel_openai_chat_completion(
 
 
 def create_chat_completion_client_session(
-    config: OpenAIChatCompletionConfig, use_retries: bool,
+    config: OpenAIChatCompletionConfig,
+    use_retries: bool,
 ) -> ClientSessionType:
     headers = create_openai_http_headers(config)
     client_timeout = ClientTimeout(total=OPENAI_REQUEST_TIMEOUT_SECONDS)
@@ -127,17 +130,23 @@ async def _chat_completion_with_ratelimit(
     num_ratelimit_retries: int = 0,
 ) -> tuple[Optional[str], dict]:
     logger.debug(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
-    async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as response:
+    async with client_session.post(
+        OPENAI_CHAT_COMPLETIONS_URL, json=payload
+    ) as response:
         logger.debug(f"Response {response.status=} from {payload=} {response.headers=}")
         if response.status == 429:
             if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
-                raise Exception(f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}")
+                raise Exception(
+                    f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
+                )
             retry_after = int(response.headers.get("retry-after", "0"))
             if retry_after > 0:
                 sleep_seconds = retry_after + RATELIMIT_RETRY_SLEEP_SECONDS
             else:
                 sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
-            logger.debug(f"Sleeping for {sleep_seconds=} due to ratelimit {response.status=} {response.headers=}")
+            logger.debug(
+                f"Sleeping for {sleep_seconds=} due to ratelimit {response.status=} {response.headers=}"
+            )
             await asyncio.sleep(sleep_seconds)
             return await _chat_completion_with_ratelimit(
                 client_session=client_session,
@@ -158,7 +167,9 @@ async def do_chat_completion_simple(
 ):
     payload = create_chat_completion_request_payload(config, prompt, system_message)
     logger.info(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
-    async with client_session.post(OPENAI_CHAT_COMPLETIONS_URL, json=payload) as response:
+    async with client_session.post(
+        OPENAI_CHAT_COMPLETIONS_URL, json=payload
+    ) as response:
         logger.info(f"Response {response.status=} from {payload=} {response.headers=}")
         response.raise_for_status()
         response_result = await response.json()
