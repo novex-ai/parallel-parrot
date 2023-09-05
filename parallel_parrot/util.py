@@ -6,7 +6,7 @@ import sys
 from typing import Optional
 
 
-logger = logging.getLogger("parallel_parrot")
+logger = logging.getLogger(__name__.split(".")[0])
 logger.addHandler(logging.NullHandler())
 
 
