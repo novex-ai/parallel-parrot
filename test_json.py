@@ -3,7 +3,6 @@ import os
 import logging
 
 import parallel_parrot as pp
-from parallel_parrot.util import auto_explode_dictlist
 from parallel_parrot.prompt_templates import JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT
 
 
@@ -46,6 +45,6 @@ Go beyond past customer behavior data and start building forecasts based on accu
         output_key="output",
     ))
     print("-------------------------------")
-    qa_list = auto_explode_dictlist(result_dictlist, "output")
+    qa_list = pp.auto_explode_dictlist(result_dictlist, "output")
     print(json.dumps(qa_list, indent=2))
 
