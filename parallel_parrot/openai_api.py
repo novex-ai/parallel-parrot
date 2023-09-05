@@ -167,20 +167,23 @@ async def do_chat_completion_simple(
         return (model_output, usage, response.headers)
 
 
-def parse_chat_completion_result(result: dict) -> tuple[Optional[str], dict]:
+def parse_chat_completion_result(response_result: dict) -> tuple[Optional[str], dict]:
     """
     https://platform.openai.com/docs/api-reference/chat/object
     """
-    if result.get("object") != "chat.completion":
-        raise ValueError(f"Unexpected object type: {result.get('object')}")
-    choices = result.get("choices", [])
-    usage = result.get("usage", OPENAI_EMPTY_USAGE_STATS)
+    if response_result.get("object") != "chat.completion":
+        raise ValueError(f"Unexpected object type: {response_result.get('object')}")
+    choices = response_result.get("choices", [])
+    usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:
         return (None, usage)
     else:
         choice = choices[0]
         message = choice.get("message", {})
         model_output = message.get("content")
+        finish_reason = message.get("finish_reason")
+        if finish_reason != "stop":
+            logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
         return (model_output, usage)
 
 
