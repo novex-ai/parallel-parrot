@@ -16,7 +16,7 @@ if __name__ == '__main__':
             {"input": "what is 2+2?"},
             {"input": "what is 3+3?"},
         ],
-        prompt_template="Q: $input\nA:",
+        prompt_template="Q: ${input}\nA:",
         output_key="output",
         system_message="you are a super-precise calculator that only returns answers"
     ))
