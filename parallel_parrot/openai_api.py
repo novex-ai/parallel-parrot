@@ -10,6 +10,7 @@ from .types import ClientSessionType, OpenAIChatCompletionConfig
 OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
+RATELIMIT_RETRY_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = 1000
 MAX_NUM_RATELIMIT_RETRIES = 10
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
@@ -130,7 +131,9 @@ async def _chat_completion_with_ratelimit(
                 raise Exception(f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}")
             retry_after = int(response.headers.get("retry-after", "0"))
             if retry_after > 0:
-                await asyncio.sleep(retry_after)
+                await asyncio.sleep(retry_after + RATELIMIT_RETRY_SLEEP_SECONDS)
+            else:
+                await asyncio.sleep(RATELIMIT_RETRY_SLEEP_SECONDS)
             return await _chat_completion_with_ratelimit(
                 client_session=client_session,
                 payload=payload,
