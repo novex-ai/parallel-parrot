@@ -25,10 +25,9 @@ async def to_request():
                         "content": """
 Generate question and answer pairs from the following document.
 Output a list of JSON objects with keys "question" and "answer".
-example:
-[{"question": "What is the capital of France?", "answer": "Paris"},{"question": "What is the capital of Spain?", "answer": "Madrid"}]
+Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
 document: Power your business with Retina
-Get fast, reliable CLV
+Get fast, reliable Customer Lifetime Value (CLV)
 Every deliverable related to 90%+ accurate CLV (scores, analytics, backtest & data explorer) is delivered within hours vs. months or years and at a fraction of the cost.
                         """
                     }
