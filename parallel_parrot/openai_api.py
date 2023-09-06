@@ -26,6 +26,8 @@ async def single_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: str = None,
+    functions: Optional[list[dict]] = None,
+    function_call: Union[None, dict, str] = None,
 ):
     async with create_chat_completion_client_session(
         config, use_retries=False
@@ -35,6 +37,8 @@ async def single_openai_chat_completion(
             config=config,
             prompt=prompt,
             system_message=system_message,
+            functions=functions,
+            function_call=function_call,
         )
     return result_tuple
 
@@ -43,6 +47,8 @@ async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
     system_message: str = None,
+    functions: Optional[list[dict]] = None,
+    function_call: Union[None, dict, str] = None,
     ratelimit_limit_requests: str = None,
 ) -> tuple[list[Optional[str]], list[dict]]:
     if ratelimit_limit_requests:
@@ -65,6 +71,8 @@ async def parallel_openai_chat_completion(
                     config=config,
                     prompt=prompt,
                     system_message=system_message,
+                    functions=functions,
+                    function_call=function_call,
                 )
             )
             for prompt in prompts
@@ -113,10 +121,18 @@ async def do_chat_completion_with_semaphore(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
+    functions: Optional[list[dict]] = None,
+    function_call: Union[None, dict, str] = None,
 ) -> tuple[Optional[str], dict]:
     if not prompt:
         return (None, OPENAI_EMPTY_USAGE_STATS)
-    payload = create_chat_completion_request_payload(config, prompt, system_message)
+    payload = create_chat_completion_request_payload(
+        config=config,
+        prompt=prompt,
+        system_message=system_message,
+        functions=functions,
+        function_call=function_call,
+    )
     async with semaphore:
         return await _chat_completion_with_ratelimit(
             client_session=client_session,
@@ -164,8 +180,16 @@ async def do_chat_completion_simple(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
+    functions: Optional[list[dict]] = None,
+    function_call: Union[None, dict, str] = None,
 ):
-    payload = create_chat_completion_request_payload(config, prompt, system_message)
+    payload = create_chat_completion_request_payload(
+        config=config,
+        prompt=prompt,
+        system_message=system_message,
+        functions=functions,
+        function_call=function_call,
+    )
     logger.info(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
@@ -217,6 +241,8 @@ def create_chat_completion_request_payload(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     system_message: Optional[str] = None,
+    functions: Optional[list[dict]] = None,
+    function_call: Union[None, dict, str] = None,
 ) -> dict:
     """
     https://platform.openai.com/docs/api-reference/chat/create
@@ -246,6 +272,10 @@ def create_chat_completion_request_payload(
         messages.append({"role": "system", "content": system_message})
     messages.append({"role": "user", "content": prompt})
     payload["messages"] = messages
+    if functions is not None:
+        payload["functions"] = functions
+    if function_call is not None:
+        payload["function_call"] = function_call
     return payload
 
 
