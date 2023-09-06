@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Optional, Union
 
 from aiohttp import ClientSession, ClientTimeout
@@ -229,9 +230,17 @@ def parse_chat_completion_message_and_usage(
         content = message.get("content")
         if content:
             return (content, usage)
-        else:
-            function_call = message.get("function_call")
-            return (function_call, usage)
+        function_call = message.get("function_call")
+        if function_call:
+            parsed_arguments = _parse_json_arguments_from_function_call(function_call)
+            single_function_param = len(parsed_arguments.keys()) == 1
+            if single_function_param:
+                # de-nest a single parameter
+                param_name = next(iter(parsed_arguments))
+                return (parsed_arguments.get(param_name), usage)
+            else:
+                return (parsed_arguments, usage)
+        return (None, usage)
     else:
         messages = [choice.get("message", {}) for choice in choices]
         content_set = set()
@@ -248,9 +257,29 @@ def parse_chat_completion_message_and_usage(
                 if function_call:
                     function_calls.append(function_call)
         if len(content_set) > 0:
+            # return a deduped list of string outputs
             return (list(content_set), usage)
-        else:
+        elif len(function_calls) > 0:
+            parsed_arguments_list = [
+                _parse_json_arguments_from_function_call(function_call)
+                for function_call in function_calls
+            ]
+            first_parsed_arguments = parsed_arguments_list[0]
+            single_function_param = len(first_parsed_arguments.keys()) == 1
+            if single_function_param:
+                param_name = next(iter(first_parsed_arguments))
+                param_value = first_parsed_arguments.get(param_name)
+                if isinstance(param_value, list):
+                    # reduce all of the list parameter outputs into a single list
+                    output_list = []
+                    for parsed_arguments in parsed_arguments_list:
+                        output_list += parsed_arguments.get(param_name, [])
+                    # de-nest a single list-valued parameter
+                    output = output_list
+                    return (output, usage)
             return (function_calls, usage)
+        else:
+            return (None, usage)
 
 
 def create_chat_completion_request_payload(
@@ -303,3 +332,15 @@ def create_openai_http_headers(config: OpenAIChatCompletionConfig) -> dict:
     if config.openai_org_id:
         headers["OpenAI-Organization"] = config.openai_org_id
     return headers
+
+
+def _parse_json_arguments_from_function_call(function_call: dict):
+    arguments = function_call.get("arguments")
+    if not arguments:
+        return None
+    try:
+        parsed_arguments = json.loads(arguments)
+        return parsed_arguments
+    except Exception as e:
+        logger.warn(f"Could not parse arguments in {function_call=} {e=}")
+    return None
