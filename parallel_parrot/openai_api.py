@@ -32,7 +32,7 @@ async def single_openai_chat_completion(
     async with create_chat_completion_client_session(
         config, use_retries=False
     ) as client_session:
-        result_tuple = await do_chat_completion_simple(
+        (response_result, response_headers) = await do_chat_completion_simple(
             client_session=client_session,
             config=config,
             prompt=prompt,
@@ -40,7 +40,8 @@ async def single_openai_chat_completion(
             functions=functions,
             function_call=function_call,
         )
-    return result_tuple
+        (model_output, usage) = parse_chat_completion_message_content(response_result)
+    return (model_output, usage, response_headers)
 
 
 async def parallel_openai_chat_completion(
@@ -77,7 +78,11 @@ async def parallel_openai_chat_completion(
             )
             for prompt in prompts
         ]
-        result_tuples = await asyncio.gather(*tasks)
+        response_results = await asyncio.gather(*tasks)
+    result_tuples = [
+        parse_chat_completion_message_content(response_result)
+        for response_result in response_results
+    ]
     unzipped_results = list(zip(*result_tuples))
     model_outputs = list(unzipped_results[0])
     usage_stats_list = list(unzipped_results[1])
@@ -144,7 +149,7 @@ async def _chat_completion_with_ratelimit(
     client_session: ClientSessionType,
     payload: dict,
     num_ratelimit_retries: int = 0,
-) -> tuple[Optional[str], dict]:
+) -> dict:
     logger.debug(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
@@ -172,7 +177,7 @@ async def _chat_completion_with_ratelimit(
         response.raise_for_status()
         response_result = await response.json()
         logger.debug(f"Response {response_result=} from {payload=}")
-        return parse_chat_completion_message_content(response_result)
+        return response_result
 
 
 async def do_chat_completion_simple(
@@ -182,7 +187,7 @@ async def do_chat_completion_simple(
     system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
-):
+) -> tuple[dict, dict]:
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
@@ -198,8 +203,7 @@ async def do_chat_completion_simple(
         response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")
-        (model_output, usage) = parse_chat_completion_message_content(response_result)
-        return (model_output, usage, response.headers)
+        return (response_result, response.headers)
 
 
 def parse_chat_completion_message_content(
