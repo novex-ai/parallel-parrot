@@ -28,7 +28,7 @@ async def single_openai_chat_completion(
     system_message: str = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
-):
+) -> tuple[Union[None, str, list], dict, dict]:
     async with create_chat_completion_client_session(
         config, use_retries=False
     ) as client_session:
@@ -40,7 +40,7 @@ async def single_openai_chat_completion(
             functions=functions,
             function_call=function_call,
         )
-        (model_output, usage) = parse_chat_completion_message_content(response_result)
+        (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
     return (model_output, usage, response_headers)
 
 
@@ -51,7 +51,7 @@ async def parallel_openai_chat_completion(
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
     ratelimit_limit_requests: str = None,
-) -> tuple[list[Optional[str]], list[dict]]:
+) -> tuple[list[Union[None, str, dict]], list[dict]]:
     if ratelimit_limit_requests:
         # use half of the available capacity at a time, up until the fileshandle system limit
         # https://platform.openai.com/docs/guides/rate-limits/overview
@@ -80,7 +80,7 @@ async def parallel_openai_chat_completion(
         ]
         response_results = await asyncio.gather(*tasks)
     result_tuples = [
-        parse_chat_completion_message_content(response_result)
+        parse_chat_completion_message_and_usage(response_result)
         for response_result in response_results
     ]
     unzipped_results = list(zip(*result_tuples))
@@ -206,7 +206,7 @@ async def do_chat_completion_simple(
         return (response_result, response.headers)
 
 
-def parse_chat_completion_message_content(
+def parse_chat_completion_message_and_usage(
     response_result: dict,
 ) -> tuple[Union[None, str, list], dict]:
     """
@@ -223,22 +223,34 @@ def parse_chat_completion_message_content(
     elif len(choices) == 1:
         choice = choices[0]
         message = choice.get("message", {})
-        model_output = message.get("content")
         finish_reason = message.get("finish_reason")
         if finish_reason != "stop":
             logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
-        return (model_output, usage)
+        content = message.get("content")
+        if content:
+            return (content, usage)
+        else:
+            function_call = message.get("function_call")
+            return (function_call, usage)
     else:
         messages = [choice.get("message", {}) for choice in choices]
-        model_outputs = set()
+        content_set = set()
+        function_calls = list()
         for message in messages:
             finish_reason = message.get("finish_reason")
             if finish_reason != "stop":
                 logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
-            model_output = message.get("content")
-            if model_output:
-                model_outputs.add(model_output)
-        return (list(model_outputs), usage)
+            content = message.get("content")
+            if content:
+                content_set.add(content)
+            else:
+                function_call = message.get("function_call")
+                if function_call:
+                    function_calls.append(function_call)
+        if len(content_set) > 0:
+            return (list(content_set), usage)
+        else:
+            return (function_calls, usage)
 
 
 def create_chat_completion_request_payload(
