@@ -277,6 +277,10 @@ def parse_chat_completion_message_and_usage(
                     # de-nest a single list-valued parameter
                     output = output_list
                     return (output, usage)
+                else:
+                    # de-nest a single parameter
+                    output = [parsed_arguments.get(param_name) for parsed_arguments in parsed_arguments_list]
+                    return (output, usage)
             return (function_calls, usage)
         else:
             return (None, usage)
