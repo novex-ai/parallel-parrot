@@ -132,6 +132,7 @@ async def _parrot_openai_chat_completion(
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ):
+    # process a single row first, both to check for errors and to get the ratelimit_limit_requests
     (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
         config=config,
         prompt=prompts[0],
