@@ -156,7 +156,7 @@ async def _chat_completion_with_ratelimit(
         response.raise_for_status()
         response_result = await response.json()
         logger.debug(f"Response {response_result=} from {payload=}")
-        return parse_chat_completion_result(response_result)
+        return parse_chat_completion_message_content(response_result)
 
 
 async def do_chat_completion_simple(
@@ -174,11 +174,11 @@ async def do_chat_completion_simple(
         response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")
-        (model_output, usage) = parse_chat_completion_result(response_result)
+        (model_output, usage) = parse_chat_completion_message_content(response_result)
         return (model_output, usage, response.headers)
 
 
-def parse_chat_completion_result(
+def parse_chat_completion_message_content(
     response_result: dict,
 ) -> tuple[Union[None, str, list], dict]:
     """
