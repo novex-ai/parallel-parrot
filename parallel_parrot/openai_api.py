@@ -224,9 +224,9 @@ def parse_chat_completion_message_and_usage(
     elif len(choices) == 1:
         choice = choices[0]
         message = choice.get("message", {})
-        finish_reason = message.get("finish_reason")
+        finish_reason = choice.get("finish_reason")
         if finish_reason != "stop":
-            logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
+            logger.warning(f"Unexpected {finish_reason=} in {choice=}")
         content = message.get("content")
         if content:
             return (content, usage)
@@ -242,13 +242,13 @@ def parse_chat_completion_message_and_usage(
                 return (parsed_arguments, usage)
         return (None, usage)
     else:
-        messages = [choice.get("message", {}) for choice in choices]
         content_set = set()
         function_calls = list()
-        for message in messages:
-            finish_reason = message.get("finish_reason")
+        for choice in choices:
+            message = choice.get("message", {})
+            finish_reason = choice.get("finish_reason")
             if finish_reason != "stop":
-                logger.warning(f"Unexpected {finish_reason=} in {response_result=}")
+                logger.warning(f"Unexpected {finish_reason=} in {choice=}")
             content = message.get("content")
             if content:
                 content_set.add(content)
