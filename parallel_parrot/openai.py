@@ -157,9 +157,7 @@ async def _parrot_openai_chat_completion(
 
 
 def _prep_function_list_of_objects(
-    function_name: str,
-    parameter_name: str,
-    output_key_names: list[str]
+    function_name: str, parameter_name: str, output_key_names: list[str]
 ):
     if len(output_key_names) == 0:
         raise ParallelParrotError(f"{output_key_names=} must not be empty")

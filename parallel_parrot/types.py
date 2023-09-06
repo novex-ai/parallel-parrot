@@ -16,6 +16,7 @@ class OpenAIChatCompletionConfig(BaseModel):
     """
     https://platform.openai.com/docs/api-reference/chat/create
     """
+
     openai_api_key: str
     openai_org_id: Optional[str] = None
     model: str = "gpt-3.5-turbo"

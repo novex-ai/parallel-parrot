@@ -52,7 +52,9 @@ def append_one_to_many_model_outputs_dictlist(
 
 
 def append_one_to_many_objlist_outputs_dictlist(
-    input_list: list[dict], objlist_outputs: list[list[dict]], output_key_names: list[str]
+    input_list: list[dict],
+    objlist_outputs: list[list[dict]],
+    output_key_names: list[str],
 ):
     output_list = []
     for input_dict, objlist_output in zip(input_list, objlist_outputs):
@@ -64,7 +66,9 @@ def append_one_to_many_objlist_outputs_dictlist(
     return output_list
 
 
-def auto_explode_json_dictlist(data_distlist: list[dict], key: str, delete_source_data: bool = True) -> list[dict]:
+def auto_explode_json_dictlist(
+    data_distlist: list[dict], key: str, delete_source_data: bool = True
+) -> list[dict]:
     """
     If the value of a key is a list, explode the list into multiple rows
     """
