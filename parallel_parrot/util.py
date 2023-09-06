@@ -69,7 +69,7 @@ def auto_explode_json_dictlist(data_distlist: list[dict], key: str, delete_sourc
                         del output_dict[key]
                     output_list.append(output_dict)
                 appended_data = True
-        except:
+        except Exception:
             pass
         if not appended_data:
             output_list.append(data_dict)
