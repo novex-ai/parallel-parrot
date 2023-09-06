@@ -112,6 +112,7 @@ def create_chat_completion_client_session(
         max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
         factor=2.0,
         statuses=[409, 500],
+        exceptions=[asyncio.TimeoutError],
         random_interval_size=5.0,
         retry_all_server_errors=True,
     )
