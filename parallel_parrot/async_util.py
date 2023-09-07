@@ -10,7 +10,7 @@ def sync_run(runnable: Coroutine) -> Any:
     Run an async function synchronously.
     """
     if sys.version_info >= (3, 11):
-        with asyncio.Runner(loop_factor=uvloop.new_event_loop) as runner:
+        with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
             return runner.run(runnable)
     else:
         loop = uvloop.new_event_loop()
