@@ -93,7 +93,7 @@ def test_sum_usage_stats():
             "total_tokens": 200,
             "prompt_tokens": 60,
             "completion_tokens": 140,
-        }
+        },
     ]
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     assert usage_stats_sum == {
