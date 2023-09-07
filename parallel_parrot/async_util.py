@@ -2,13 +2,19 @@ import asyncio
 from typing import Coroutine, Any
 import sys
 
-import uvloop
+try:
+    import uvloop
+except ImportError:
+    uvloop = None
 
 
 def sync_run(runnable: Coroutine) -> Any:
     """
     Run an async function synchronously.
     """
+    if uvloop is None:
+        # fall back to asyncio.run if uvloop is not supported
+        return asyncio.run(runnable)
     if sys.version_info >= (3, 11):
         with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
             return runner.run(runnable)
