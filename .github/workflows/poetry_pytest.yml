@@ -30,7 +30,8 @@ jobs:
       # manually if/when you want to upgrade Poetry, or if something goes wrong. This could be
       # mildly cleaner by using an environment variable, but I don't really care.
       - name: cache poetry install
-        uses: actions/cache@v2
+        id: cached-poetry
+        uses: actions/cache@v3
         with:
           path: ~/.local
           key: poetry-1.6.1-0
@@ -44,7 +45,10 @@ jobs:
       # The key configuration value here is `virtualenvs-in-project: true`: this creates the
       # venv as a `.venv` in your testing directory, which allows the next step to easily
       # cache it.
-      - uses: snok/install-poetry@v1
+      # also https://github.com/marketplace/actions/install-poetry-action#caching-the-poetry-installation
+      - name: Install Poetry
+        if: steps.cached-poetry.outputs.cache-hit != 'true'
+        uses: snok/install-poetry@v1
         with:
           version: 1.6.1
           virtualenvs-create: true
