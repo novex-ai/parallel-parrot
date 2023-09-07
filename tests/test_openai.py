@@ -42,6 +42,10 @@ def test_parrot_openai_chat_completion_dictlist(
     )
     mock_aioresponse.post(
         "https://api.openai.com/v1/chat/completions",
+        status=409,
+    )
+    mock_aioresponse.post(
+        "https://api.openai.com/v1/chat/completions",
         status=429,
         headers={
             "retry-after": "0.01",
