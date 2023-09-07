@@ -123,6 +123,20 @@ files = [
 aiohttp = "*"
 
 [[package]]
+name = "aioresponses"
+version = "0.7.4"
+description = "Mock out requests made by ClientSession from aiohttp package"
+optional = false
+python-versions = "*"
+files = [
+    {file = "aioresponses-0.7.4-py2.py3-none-any.whl", hash = "sha256:1160486b5ea96fcae6170cf2bdef029b9d3a283b7dbeabb3d7f1182769bfb6b7"},
+    {file = "aioresponses-0.7.4.tar.gz", hash = "sha256:9b8c108b36354c04633bad0ea752b55d956a7602fe3e3234b939fc44af96f1d8"},
+]
+
+[package.dependencies]
+aiohttp = ">=2.0.0,<4.0.0"
+
+[[package]]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -877,13 +891,13 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "7.4.1"
+version = "7.4.2"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.4.1-py3-none-any.whl", hash = "sha256:460c9a59b14e27c602eb5ece2e47bec99dc5fc5f6513cf924a7d03a578991b1f"},
-    {file = "pytest-7.4.1.tar.gz", hash = "sha256:2f2301e797521b23e4d2585a0a3d7b5e50fdddaaf7e7d6773ea26ddb17c213ab"},
+    {file = "pytest-7.4.2-py3-none-any.whl", hash = "sha256:1d881c6124e08ff0a1bb75ba3ec0bfd8b5354a01c194ddd5a0a870a48d99b002"},
+    {file = "pytest-7.4.2.tar.gz", hash = "sha256:a766259cfab564a2ad52cb1aae1b881a75c3eb7e34ca3779697c23ed47c47069"},
 ]
 
 [package.dependencies]
@@ -1283,4 +1297,4 @@ pandas = ["pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "1f175789506019975e8f6f345d88d7e5516f4f59a253400b1168225513b9d3a5"
+content-hash = "1b901756eefcb095b7ef2c177c9bade5ffe620ede73673ae78c674f7d4126cbf"
