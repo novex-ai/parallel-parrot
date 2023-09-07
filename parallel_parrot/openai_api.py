@@ -162,9 +162,9 @@ async def _chat_completion_with_ratelimit(
                 raise ParallelParrotError(
                     f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
                 )
-            retry_after = int(response.headers.get("retry-after", "0"))
+            retry_after = float(response.headers.get("retry-after", "0"))
             if retry_after > 0:
-                sleep_seconds = retry_after + RATELIMIT_RETRY_SLEEP_SECONDS
+                sleep_seconds = retry_after
             else:
                 sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
             logger.debug(
