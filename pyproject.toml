@@ -9,18 +9,19 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 aiohttp = "^3.8.5"
-pydantic = "^2.3.0"
 aiohttp-retry = "^2.8.3"
-uvloop = { version = "^0.17.0", markers = "sys_platform == 'linux' or sys_platform == 'darwin'" }
+pandas = { version = "*", optional = true }
+pydantic = "^2.3.0"
 tiktoken = "^0.4.0"
+uvloop = { version = "^0.17.0", markers = "sys_platform == 'linux' or sys_platform == 'darwin'" }
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.1"
 black = "^23.7.0"
+flake8 = "^6.1.0"
+pytest = "^7.4.1"
 
-
-[tool.poetry.group.extras.dependencies]
-pandas = "*"
+[tool.poetry.extras]
+pandas = ["pandas"]
 
 [tool.black]
 line-length = 88
