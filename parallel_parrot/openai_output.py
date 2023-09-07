@@ -30,7 +30,7 @@ def write_openai_fine_tuning_jsonl(
     current_num_tokens = 0
     total_billable_num_tokens = 0
     file_index = 1
-    current_output_file_path = output_file_prefix_path.with_suffix(f".{file_index:0>6}.jsonl")
+    current_output_file_path = _make_jsonl_path(output_file_prefix_path, file_index)
     current_open_filehandle = current_output_file_path.open("w")
     output_file_paths = []
     try:
@@ -43,7 +43,7 @@ def write_openai_fine_tuning_jsonl(
                 output_file_paths.append(current_output_file_path)
                 logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
                 file_index += 1
-                current_output_file_path = output_file_prefix_path.with_suffix(f"_{file_index:0>6}.jsonl")
+                current_output_file_path = _make_jsonl_path(output_file_prefix_path, file_index)
                 current_open_filehandle = current_output_file_path.open("w")
                 current_num_tokens = 0
             current_open_filehandle.write(line)
@@ -98,3 +98,10 @@ def openai_fine_tuning_jsonl_generator(
         }
         line = json.dumps(data, separators=(",", ":")) + "\n"
         yield (line, num_tokens)
+
+
+def _make_jsonl_path(output_file_prefix_path: Path, file_index: int) -> Path:
+    output_file_path = output_file_prefix_path.with_suffix(f".{file_index:0>6}.jsonl")
+    if output_file_path.exists():
+        logger.warn(f"overwriting existing file {str(output_file_path)}")
+    return output_file_path
