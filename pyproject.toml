@@ -26,6 +26,13 @@ pandas = "*"
 line-length = 88
 target-version = ['py39', 'py310', 'py311']
 
+[tool.pytest.ini_options]
+minversion = "7.4"
+addopts = "-ra"
+testpaths = [
+    "tests",
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
