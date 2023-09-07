@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from string import Template
 import tiktoken
 from typing import Optional, Union
 
