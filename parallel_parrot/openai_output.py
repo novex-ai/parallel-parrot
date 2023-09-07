@@ -34,16 +34,22 @@ def write_openai_fine_tuning_jsonl(
     current_open_filehandle = current_output_file_path.open("w")
     output_file_paths = []
     try:
-        for (line, num_tokens) in jsonl_generator:
+        for line, num_tokens in jsonl_generator:
             if num_tokens > FINE_TUNING_MAX_TOKENS:
-                logger.warn(f"example line too long, will be truncated {num_tokens=} {line=}")
+                logger.warn(
+                    f"example line too long, will be truncated {num_tokens=} {line=}"
+                )
                 num_tokens = FINE_TUNING_MAX_TOKENS
             if current_num_tokens + num_tokens > FINE_TUNING_MAX_TOKENS:
                 current_open_filehandle.close()
                 output_file_paths.append(current_output_file_path)
-                logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
+                logger.info(
+                    f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}"
+                )
                 file_index += 1
-                current_output_file_path = _make_jsonl_path(output_file_prefix_path, file_index)
+                current_output_file_path = _make_jsonl_path(
+                    output_file_prefix_path, file_index
+                )
                 current_open_filehandle = current_output_file_path.open("w")
                 current_num_tokens = 0
             current_open_filehandle.write(line)
@@ -53,11 +59,10 @@ def write_openai_fine_tuning_jsonl(
         current_open_filehandle.close()
         output_file_paths.append(current_output_file_path)
     logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
-    logger.info(f"openai will charge for {total_billable_num_tokens=} * <number of epochs>")
-    return [
-        str(output_file_path)
-        for output_file_path in output_file_paths
-    ]
+    logger.info(
+        f"openai will charge for {total_billable_num_tokens=} * <number of epochs>"
+    )
+    return [str(output_file_path) for output_file_path in output_file_paths]
 
 
 def openai_fine_tuning_jsonl_generator(
@@ -78,20 +83,26 @@ def openai_fine_tuning_jsonl_generator(
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         messages = []
         if system_message:
-            messages.append({
-                "role": "system",
-                "content": system_message,
-            })
+            messages.append(
+                {
+                    "role": "system",
+                    "content": system_message,
+                }
+            )
             num_tokens += len(encoding.encode(system_message))
-        messages.append({
-            "role": "user",
-            "content": prompt,
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        )
         num_tokens += len(encoding.encode(prompt))
-        messages.append({
-            "role": "assistant",
-            "content": completion,
-        })
+        messages.append(
+            {
+                "role": "assistant",
+                "content": completion,
+            }
+        )
         num_tokens += len(encoding.encode(completion))
         data = {
             "messages": messages,
