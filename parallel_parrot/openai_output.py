@@ -80,5 +80,8 @@ def openai_fine_tuning_jsonl_generator(
             "role": "assistant",
             "content": completion,
         })
-        line = json.dumps(messages, separators=(",", ":")) + "\n"
+        data = {
+            "messages": messages,
+        }
+        line = json.dumps(data, separators=(",", ":")) + "\n"
         yield line
