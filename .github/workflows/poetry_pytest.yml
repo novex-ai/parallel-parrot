@@ -1,6 +1,7 @@
 # adapted from
 # https://github.com/marketplace/actions/python-poetry-action
 # https://jacobian.org/til/github-actions-poetry/
+name: poetry pytest
 
 on:
   push:
