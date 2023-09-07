@@ -33,23 +33,25 @@ def write_openai_fine_tuning_jsonl(
     current_output_file_path = output_file_prefix_path.with_suffix(f".{file_index:0>6}.jsonl")
     current_open_filehandle = current_output_file_path.open("w")
     output_file_paths = []
-    for (line, num_tokens) in jsonl_generator:
-        if num_tokens > FINE_TUNING_MAX_TOKENS:
-            logger.warn(f"example line too long, will be truncated {num_tokens=} {line=}")
-            num_tokens = FINE_TUNING_MAX_TOKENS
-        if current_num_tokens + num_tokens > FINE_TUNING_MAX_TOKENS:
-            current_open_filehandle.close()
-            output_file_paths.append(current_output_file_path)
-            logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
-            file_index += 1
-            current_output_file_path = output_file_prefix_path.with_suffix(f"_{file_index:0>6}.jsonl")
-            current_open_filehandle = current_output_file_path.open("w")
-            current_num_tokens = 0
-        current_open_filehandle.write(line)
-        current_num_tokens += num_tokens
-        total_billable_num_tokens += num_tokens
-    current_open_filehandle.close()
-    output_file_paths.append(current_output_file_path)
+    try:
+        for (line, num_tokens) in jsonl_generator:
+            if num_tokens > FINE_TUNING_MAX_TOKENS:
+                logger.warn(f"example line too long, will be truncated {num_tokens=} {line=}")
+                num_tokens = FINE_TUNING_MAX_TOKENS
+            if current_num_tokens + num_tokens > FINE_TUNING_MAX_TOKENS:
+                current_open_filehandle.close()
+                output_file_paths.append(current_output_file_path)
+                logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
+                file_index += 1
+                current_output_file_path = output_file_prefix_path.with_suffix(f"_{file_index:0>6}.jsonl")
+                current_open_filehandle = current_output_file_path.open("w")
+                current_num_tokens = 0
+            current_open_filehandle.write(line)
+            current_num_tokens += num_tokens
+            total_billable_num_tokens += num_tokens
+    finally:
+        current_open_filehandle.close()
+        output_file_paths.append(current_output_file_path)
     logger.info(f"wrote {current_num_tokens} tokens to {str(current_output_file_path)}")
     logger.info(f"openai will charge for {total_billable_num_tokens=} * <number of epochs>")
     return [
