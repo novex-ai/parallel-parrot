@@ -9,7 +9,7 @@ except ImportError:
     pd = None
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mock_aioresponse():
     with aioresponses(passthrough=[]) as m:
         yield m
