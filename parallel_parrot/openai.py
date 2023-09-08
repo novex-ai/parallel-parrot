@@ -28,8 +28,6 @@ async def parrot_openai_chat_completion_pandas(
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
-    if input_df.empty:
-        raise ParallelParrotError(f"{input_df=} must not be empty")
     prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
@@ -59,8 +57,6 @@ async def parrot_openai_chat_completion_dictlist(
     output_key: str,
     system_message: str = None,
 ) -> ParallelParrotOutput:
-    if len(input_list) == 0:
-        raise ParallelParrotError(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
@@ -97,8 +93,6 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
     Process a prompt which generates a list of objects.
     Explode those outputs into multiple rows with the object keys as column names
     """
-    if len(input_list) == 0:
-        raise ParallelParrotError(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
     (functions, function_call) = _prep_function_list_of_objects(
         function_name="f",

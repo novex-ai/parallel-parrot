@@ -15,7 +15,9 @@ logger.addHandler(logging.NullHandler())
 
 def input_list_to_prompts(input_list: list[dict], prompt_template: str) -> list[str]:
     if len(input_list) == 0:
-        raise ParallelParrotError(f"Empty {input_list=}")
+        raise ParallelParrotError(
+            f"Input data must not be empty: input={repr(input_list)}"
+        )
     prompt_template = prompt_template.strip()
     t = Template(prompt_template)
     if sys.version_info >= (3, 11):
