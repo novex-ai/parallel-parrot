@@ -70,27 +70,28 @@ def append_one_to_many_objlist_outputs_dictlist(
 
 
 def auto_explode_json_dictlist(
-    data_distlist: list[dict], key: str, delete_source_data: bool = True
+    data_dictlist: list[dict], key: str, delete_source_data: bool = True
 ) -> list[dict]:
     """
     If the value of a key is a list, explode the list into multiple rows
     """
     output_list = []
-    for data_dict in data_distlist:
+    for data_dict in data_dictlist:
         value = data_dict.get(key)
         appended_data = False
-        try:
-            row_dictlist = json.loads(value)
-            if isinstance(row_dictlist, list):
-                for row_dict in row_dictlist:
-                    output_dict = copy.copy(data_dict)
-                    output_dict.update(row_dict)
-                    if delete_source_data:
-                        del output_dict[key]
-                    output_list.append(output_dict)
-                appended_data = True
-        except Exception:
-            pass
+        if isinstance(value, str):
+            try:
+                row_dictlist = json.loads(value)
+                if isinstance(row_dictlist, list):
+                    for row_dict in row_dictlist:
+                        output_dict = copy.copy(data_dict)
+                        output_dict.update(row_dict)
+                        if delete_source_data:
+                            del output_dict[key]
+                        output_list.append(output_dict)
+                    appended_data = True
+            except Exception:
+                pass
         if not appended_data:
             output_list.append(data_dict)
     return output_list

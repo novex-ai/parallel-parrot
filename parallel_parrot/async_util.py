@@ -3,16 +3,18 @@ from typing import Coroutine, Any
 import sys
 
 try:
-    import uvloop
+    import uvloop  # type: ignore
 except ImportError:
-    uvloop = None
+    uvloop_installed = False
+else:
+    uvloop_installed = True
 
 
 def sync_run(runnable: Coroutine) -> Any:
     """
     Run an async function synchronously.
     """
-    if uvloop is None:
+    if not uvloop_installed:
         # fall back to asyncio.run if uvloop is not supported
         return asyncio.run(runnable)
     if sys.version_info >= (3, 11):

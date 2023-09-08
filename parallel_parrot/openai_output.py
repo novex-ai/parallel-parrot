@@ -17,7 +17,7 @@ def write_openai_fine_tuning_jsonl(
     system_message: Optional[str],
     model: str,
     output_file_prefix: Union[str, Path],
-) -> list[Path]:
+) -> list[str]:
     jsonl_generator = openai_fine_tuning_jsonl_generator(
         input_dictlist=input_dictlist,
         prompt_key=prompt_key,

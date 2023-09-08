@@ -1,7 +1,9 @@
 try:
-    import pandas as pd
+    import pandas as pd  # type: ignore
 except ImportError:
-    pd = None
+    pandas_installed = False
+else:
+    pandas_installed = True
 
 from typing import Optional, Union
 
@@ -22,9 +24,9 @@ async def parrot_openai_chat_completion_pandas(
     input_df: "pd.DataFrame",
     prompt_template: str,
     output_key: str,
-    system_message: str = None,
+    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
-    if not pd:
+    if not pandas_installed:
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
@@ -55,7 +57,7 @@ async def parrot_openai_chat_completion_dictlist(
     input_list: list[dict],
     prompt_template: str,
     output_key: str,
-    system_message: str = None,
+    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
@@ -87,7 +89,7 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
     input_list: list[dict],
     prompt_template: str,
     output_key_names: list[str],
-    system_message: str = None,
+    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     """
     Process a prompt which generates a list of objects.
@@ -122,7 +124,7 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
 async def _parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
-    system_message: str,
+    system_message: Optional[str],
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:

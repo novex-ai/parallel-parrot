@@ -26,7 +26,7 @@ OPENAI_EMPTY_USAGE_STATS = {
 async def single_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    system_message: str = None,
+    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> tuple[Union[None, str, list], dict, dict]:
@@ -48,11 +48,11 @@ async def single_openai_chat_completion(
 async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
-    system_message: str = None,
+    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
-    ratelimit_limit_requests: str = None,
-) -> tuple[list[Union[None, str, dict]], list[dict]]:
+    ratelimit_limit_requests: Optional[str] = None,
+) -> tuple[list, list[dict]]:
     if ratelimit_limit_requests:
         # use half of the available capacity at a time, up until the fileshandle system limit
         # https://platform.openai.com/docs/guides/rate-limits/overview
@@ -111,8 +111,8 @@ def create_chat_completion_client_session(
         start_timeout=1,
         max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
         factor=2.0,
-        statuses=[409, 500],
-        exceptions=[asyncio.TimeoutError],
+        statuses={409, 500},
+        exceptions={asyncio.TimeoutError},
         random_interval_size=1.5,
         retry_all_server_errors=True,
     )
@@ -130,9 +130,9 @@ async def do_chat_completion_with_semaphore(
     system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> tuple[Optional[str], dict]:
+) -> Optional[dict]:
     if not prompt:
-        return (None, OPENAI_EMPTY_USAGE_STATS)
+        return None
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
@@ -205,7 +205,7 @@ async def do_chat_completion_simple(
         response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")
-        return (response_result, response.headers)
+        return (response_result, dict(response.headers))
 
 
 def parse_chat_completion_message_and_usage(
