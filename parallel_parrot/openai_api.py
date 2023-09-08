@@ -113,7 +113,7 @@ def create_chat_completion_client_session(
         factor=2.0,
         statuses=[409, 500],
         exceptions=[asyncio.TimeoutError],
-        random_interval_size=5.0,
+        random_interval_size=1.5,
         retry_all_server_errors=True,
     )
     retry_client_session = RetryClient(
