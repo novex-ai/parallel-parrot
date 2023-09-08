@@ -6,7 +6,7 @@ except ImportError:
 from typing import Optional, Union
 
 from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
-from .types import ParallelParrotError, OpenAIChatCompletionConfig
+from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompletionConfig
 from .util import (
     logger,
     input_list_to_prompts,
@@ -23,7 +23,7 @@ async def parrot_openai_chat_completion_pandas(
     prompt_template: str,
     output_key: str,
     system_message: str = None,
-) -> tuple["pd.DataFrame", dict]:
+) -> ParallelParrotOutput:
     if not pd:
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
@@ -49,7 +49,7 @@ async def parrot_openai_chat_completion_pandas(
         )
     output_df = output_df.astype({output_key: "string"})
     usage_stats_sum = sum_usage_stats(usage_stats_list)
-    return output_df, usage_stats_sum
+    return ParallelParrotOutput(output=output_df, usage_stats=usage_stats_sum)
 
 
 async def parrot_openai_chat_completion_dictlist(
@@ -58,7 +58,7 @@ async def parrot_openai_chat_completion_dictlist(
     prompt_template: str,
     output_key: str,
     system_message: str = None,
-) -> tuple[list[dict], dict]:
+) -> ParallelParrotOutput:
     if len(input_list) == 0:
         raise ParallelParrotError(f"{input_list=} must not be empty")
     prompts = input_list_to_prompts(input_list, prompt_template)
@@ -83,7 +83,7 @@ async def parrot_openai_chat_completion_dictlist(
             input_list, model_outputs, output_key
         )
     usage_stats_sum = sum_usage_stats(usage_stats_list)
-    return output_list, usage_stats_sum
+    return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
 
 
 async def parrot_openai_chat_completion_exploding_function_dictlist(
@@ -92,7 +92,7 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
     prompt_template: str,
     output_key_names: list[str],
     system_message: str = None,
-):
+) -> ParallelParrotOutput:
     """
     Process a prompt which generates a list of objects.
     Explode those outputs into multiple rows with the object keys as column names
@@ -122,7 +122,7 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
         f" {input_num_rows=} {output_num_rows=}"
     )
     usage_stats_sum = sum_usage_stats(usage_stats_list)
-    return (output_list, usage_stats_sum)
+    return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
 
 
 async def _parrot_openai_chat_completion(
@@ -131,7 +131,7 @@ async def _parrot_openai_chat_completion(
     system_message: str,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
-):
+) -> ParallelParrotOutput:
     # process a single row first, both to check for errors and to get the ratelimit_limit_requests
     (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
         config=config,
@@ -154,7 +154,7 @@ async def _parrot_openai_chat_completion(
         )
         model_outputs += _model_outputs
         usage_stats_list += _usage_stats_list
-    return (model_outputs, usage_stats_list)
+    return ParallelParrotOutput(output=model_outputs, usage_stats=usage_stats_list)
 
 
 def _prep_function_list_of_objects(

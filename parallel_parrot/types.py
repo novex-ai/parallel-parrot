@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Optional, Union
 
 from aiohttp import ClientSession
@@ -8,6 +9,8 @@ from pydantic import BaseModel
 class ParallelParrotError(Exception):
     pass
 
+
+ParallelParrotOutput = namedtuple("ParallelParrotOutput", ["output", "usage_stats"])
 
 ClientSessionType = Union[ClientSession, RetryClient]
 
