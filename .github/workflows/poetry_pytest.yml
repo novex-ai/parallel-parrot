@@ -14,6 +14,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
         os: [ubuntu-latest, macos-latest, windows-latest]
+        poetry-options: ["", "--extras=pandas"]
     defaults:
       run:
         shell: bash
@@ -26,5 +27,5 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
-      - run: poetry install --no-interaction
+      - run: poetry install --no-interaction ${{ matrix.poetry-options }}
       - run: poetry run pytest
