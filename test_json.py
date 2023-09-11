@@ -29,17 +29,11 @@ Leading e-commerce and subscription brands use Retina AI to predict customer lif
 Get fast, reliable CLV
 Every deliverable related to 90%+ accurate CLV (scores, analytics, backtest & data explorer) is delivered within hours vs. months or years and at a fraction of the cost.
 
- 
-
 Gain a deeper understanding of your customers
 Access dashboards and reports that tell you which segments, customers, and attributes are high-performing and which are dragging down your business profitability.
 
- 
-
 Improve customer profitability
 Retina’s unique combination of predictive insights and integrations make it easy to identify and act to acquire and retain more high-value customers.
-
- 
 
 Generate more accurate forecasts
 Go beyond past customer behavior data and start building forecasts based on accurate predictions of future customer behavior and revenue.
