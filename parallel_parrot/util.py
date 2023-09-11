@@ -99,7 +99,10 @@ def auto_explode_json_dictlist(
             except Exception:
                 pass
         if not appended_data:
-            output_list.append(data_dict)
+            output_dict = copy.copy(data_dict)
+            if delete_source_data:
+                del output_dict[key]
+            output_list.append(output_dict)
     return output_list
 
 
