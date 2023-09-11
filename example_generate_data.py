@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 async def main():
-    result = await pp.parallel_data_generation(
+    (output, usage_stats) = await pp.parallel_data_generation(
         config=config,
         input_data=[
             {
@@ -36,7 +36,7 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
         prompt_template=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
         output_key_names=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
     )
-    print(json.dumps(result, indent=2))
+    print(json.dumps(output, indent=2))
 
 
 if __name__ == "__main__":

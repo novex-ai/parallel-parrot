@@ -4,8 +4,19 @@ QUESTION_FROM_DOCUMENT = """
 Come up with a single question which is best answered by the following document: ${input}
 """
 
+SENTIMENT_FROM_DOCUMENT = """
+What is the sentiment of the following document?
+POSITIVE, NEUTRAL or NEGATIVE?
+document: ${input}
+"""
+
 SUMMARY_FROM_DOCUMENT = """
 Generate a concise summary of the following document: ${input}
+"""
+
+REMOVE_PII_FROM_DOCUMENT = """
+Sanitize the following text, removing all names of individuals and companies, email addresses, and phone numbers.
+text: ${input}
 """
 
 JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT = """
