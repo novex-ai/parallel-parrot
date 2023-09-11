@@ -1,4 +1,4 @@
-from .async_util import sync_run
+from .util_async import sync_run
 from .types import OpenAIChatCompletionConfig
 from .openai import (
     parrot_openai_chat_completion_dictlist,

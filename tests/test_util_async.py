@@ -1,4 +1,4 @@
-from parallel_parrot.async_util import sync_run
+from parallel_parrot.util_async import sync_run
 
 
 def test_sync_run():
