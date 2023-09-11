@@ -32,11 +32,11 @@ if __name__ == "__main__":
             input_data=input_df,
             prompt_template="""
 What is the sentiment of this product review?
-POSITIVE or NEGATIVE?
+POSITIVE, NEUTRAL or NEGATIVE?
 product review: ${input}
 sentiment:""",
             output_key="sentiment",
         )
     )
-    print(repr(output_df["sentiment"]))
+    print(repr(output_df))
     print(repr(usage_stats_sum))
