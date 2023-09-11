@@ -61,10 +61,16 @@ def append_one_to_many_objlist_outputs_dictlist(
 ):
     output_list = []
     for input_dict, objlist_output in zip(input_list, objlist_outputs):
-        for obj in objlist_output:
+        if len(objlist_output) > 0:
+            for obj in objlist_output:
+                output_dict = copy.copy(input_dict)
+                for key in output_key_names:
+                    output_dict[key] = obj[key]
+                output_list.append(output_dict)
+        else:
             output_dict = copy.copy(input_dict)
             for key in output_key_names:
-                output_dict[key] = obj[key]
+                output_dict[key] = None
             output_list.append(output_dict)
     return output_list
 
