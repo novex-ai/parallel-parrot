@@ -31,13 +31,11 @@ async def parallel_openai_chat_completion_dictlist(
     input_list: list[dict],
     prompt_template: str,
     output_key: str,
-    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
         prompts=prompts,
-        system_message=system_message,
     )
     if config.n is not None and config.n > 1:
         output_list = append_one_to_many_model_outputs_dictlist(
@@ -63,7 +61,6 @@ async def parallel_openai_chat_completion_pandas(
     input_df: "pd.DataFrame",
     prompt_template: str,
     output_key: str,
-    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     if not pandas_installed:
         raise ParallelParrotError(
@@ -73,7 +70,6 @@ async def parallel_openai_chat_completion_pandas(
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
         prompts=prompts,
-        system_message=system_message,
     )
     if config.n is not None and config.n > 1:
         output_df = append_one_to_many_model_outputs_pandas(
@@ -97,7 +93,6 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     input_list: list[dict],
     prompt_template: str,
     output_key_names: list[str],
-    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     """
     Process a prompt which generates a list of objects.
@@ -112,7 +107,6 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
         prompts=prompts,
-        system_message=system_message,
         functions=functions,
         function_call=function_call,
     )
@@ -134,7 +128,6 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
     input_df: "pd.DataFrame",
     prompt_template: str,
     output_key_names: list[str],
-    system_message: Optional[str] = None,
 ) -> ParallelParrotOutput:
     if not pandas_installed:
         raise ParallelParrotError(
@@ -149,7 +142,6 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
         prompts=prompts,
-        system_message=system_message,
         functions=functions,
         function_call=function_call,
     )
@@ -169,7 +161,6 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
 async def _parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
-    system_message: Optional[str],
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:
@@ -177,7 +168,6 @@ async def _parrot_openai_chat_completion(
     (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
         config=config,
         prompt=prompts[0],
-        system_message=system_message,
         functions=functions,
         function_call=function_call,
     )
@@ -188,7 +178,6 @@ async def _parrot_openai_chat_completion(
         (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
             config=config,
             prompts=prompts[1:],
-            system_message=system_message,
             functions=functions,
             function_call=function_call,
             ratelimit_limit_requests=ratelimit_limit_requests,

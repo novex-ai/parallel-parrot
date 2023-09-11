@@ -26,7 +26,6 @@ OPENAI_EMPTY_USAGE_STATS = {
 async def single_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> tuple[Union[None, str, list], dict, dict]:
@@ -37,7 +36,6 @@ async def single_openai_chat_completion(
             client_session=client_session,
             config=config,
             prompt=prompt,
-            system_message=system_message,
             functions=functions,
             function_call=function_call,
         )
@@ -48,7 +46,6 @@ async def single_openai_chat_completion(
 async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompts: list[str],
-    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
     ratelimit_limit_requests: Optional[str] = None,
@@ -72,7 +69,6 @@ async def parallel_openai_chat_completion(
                     semaphore=semaphore,
                     config=config,
                     prompt=prompt,
-                    system_message=system_message,
                     functions=functions,
                     function_call=function_call,
                 )
@@ -127,7 +123,6 @@ async def do_chat_completion_with_semaphore(
     semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Optional[dict]:
@@ -136,7 +131,6 @@ async def do_chat_completion_with_semaphore(
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
-        system_message=system_message,
         functions=functions,
         function_call=function_call,
     )
@@ -186,14 +180,12 @@ async def do_chat_completion_simple(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> tuple[dict, dict]:
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
-        system_message=system_message,
         functions=functions,
         function_call=function_call,
     )
@@ -293,7 +285,6 @@ def parse_chat_completion_message_and_usage(
 def create_chat_completion_request_payload(
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    system_message: Optional[str] = None,
     functions: Optional[list[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> dict:
@@ -321,8 +312,8 @@ def create_chat_completion_request_payload(
     if config.user is not None:
         payload["user"] = config.user
     messages = []
-    if system_message:
-        messages.append({"role": "system", "content": system_message})
+    if config.system_message:
+        messages.append({"role": "system", "content": config.system_message})
     messages.append({"role": "user", "content": prompt})
     payload["messages"] = messages
     if functions is not None:

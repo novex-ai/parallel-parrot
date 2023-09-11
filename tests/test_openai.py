@@ -25,6 +25,8 @@ def openai_chat_completion_config():
 def test_parallel_openai_chat_completion_dictlist(
     mock_aioresponse, openai_chat_completion_config
 ):
+    config = openai_chat_completion_config.model_copy()
+    config.system_message = "you are a super-precise calculator that returns correct answers in integer form"
     mock_aioresponse.post(
         "https://api.openai.com/v1/chat/completions",
         headers={
@@ -75,14 +77,13 @@ def test_parallel_openai_chat_completion_dictlist(
     )
     (output_list, usage_stats_sum) = pp.sync_run(
         pp.parallel_openai_chat_completion_dictlist(
-            config=openai_chat_completion_config,
+            config=config,
             input_list=[
                 {"input": "what is 1+1?"},
                 {"input": "what is 2+2?"},
             ],
             prompt_template="Q: ${input}\nA:",
             output_key="output",
-            system_message="you are a super-precise calculator that returns correct answers in integer form",
         )
     )
     assert output_list == [

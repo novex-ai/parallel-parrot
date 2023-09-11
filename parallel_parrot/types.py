@@ -23,6 +23,7 @@ class OpenAIChatCompletionConfig(BaseModel):
     openai_api_key: str
     openai_org_id: Optional[str] = None
     model: str = "gpt-3.5-turbo"
+    system_message: Optional[str] = None
     temperature: Optional[float] = None
     top_p: Optional[float] = None
     n: Optional[int] = None
