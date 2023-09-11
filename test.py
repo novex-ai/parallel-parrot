@@ -27,7 +27,7 @@ if __name__ == "__main__":
         index=[100, 101],
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parrot_openai_chat_completion_pandas(
+        pp.parallel_openai_chat_completion_pandas(
             config=config,
             input_df=input_df,
             prompt_template="""

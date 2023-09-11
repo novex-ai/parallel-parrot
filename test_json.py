@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
     (result_dictlist, stats) = pp.sync_run(
-        pp.parrot_openai_chat_completion_dictlist(
+        pp.parallel_openai_chat_completion_dictlist(
             config=config,
             input_list=[
                 {

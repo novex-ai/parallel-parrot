@@ -26,7 +26,39 @@ from .util_pandas import (
 )
 
 
-async def parrot_openai_chat_completion_pandas(
+async def parallel_openai_chat_completion_dictlist(
+    config: OpenAIChatCompletionConfig,
+    input_list: list[dict],
+    prompt_template: str,
+    output_key: str,
+    system_message: Optional[str] = None,
+) -> ParallelParrotOutput:
+    prompts = input_list_to_prompts(input_list, prompt_template)
+    (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
+        config=config,
+        prompts=prompts,
+        system_message=system_message,
+    )
+    if config.n is not None and config.n > 1:
+        output_list = append_one_to_many_model_outputs_dictlist(
+            input_list, model_outputs, output_key
+        )
+        input_num_rows = len(input_list)
+        output_num_rows = len(output_list)
+        logger.info(
+            "Output may have more rows than input"
+            f" because {config.n=} is greater than 1."
+            f" {input_num_rows=} {output_num_rows=}"
+        )
+    else:
+        output_list = append_model_outputs_dictlist(
+            input_list, model_outputs, output_key
+        )
+    usage_stats_sum = sum_usage_stats(usage_stats_list)
+    return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
+
+
+async def parallel_openai_chat_completion_pandas(
     config: OpenAIChatCompletionConfig,
     input_df: "pd.DataFrame",
     prompt_template: str,
@@ -60,39 +92,7 @@ async def parrot_openai_chat_completion_pandas(
     return ParallelParrotOutput(output=output_df, usage_stats=usage_stats_sum)
 
 
-async def parrot_openai_chat_completion_dictlist(
-    config: OpenAIChatCompletionConfig,
-    input_list: list[dict],
-    prompt_template: str,
-    output_key: str,
-    system_message: Optional[str] = None,
-) -> ParallelParrotOutput:
-    prompts = input_list_to_prompts(input_list, prompt_template)
-    (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
-        config=config,
-        prompts=prompts,
-        system_message=system_message,
-    )
-    if config.n is not None and config.n > 1:
-        output_list = append_one_to_many_model_outputs_dictlist(
-            input_list, model_outputs, output_key
-        )
-        input_num_rows = len(input_list)
-        output_num_rows = len(output_list)
-        logger.info(
-            "Output may have more rows than input"
-            f" because {config.n=} is greater than 1."
-            f" {input_num_rows=} {output_num_rows=}"
-        )
-    else:
-        output_list = append_model_outputs_dictlist(
-            input_list, model_outputs, output_key
-        )
-    usage_stats_sum = sum_usage_stats(usage_stats_list)
-    return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
-
-
-async def parrot_openai_chat_completion_exploding_function_dictlist(
+async def parallel_openai_chat_completion_exploding_function_dictlist(
     config: OpenAIChatCompletionConfig,
     input_list: list[dict],
     prompt_template: str,
@@ -129,7 +129,7 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
     return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
 
 
-async def parrot_openai_chat_completion_exploding_function_pandas(
+async def parallel_openai_chat_completion_exploding_function_pandas(
     config: OpenAIChatCompletionConfig,
     input_df: "pd.DataFrame",
     prompt_template: str,

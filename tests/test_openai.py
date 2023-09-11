@@ -22,7 +22,7 @@ def openai_chat_completion_config():
     )
 
 
-def test_parrot_openai_chat_completion_dictlist(
+def test_parallel_openai_chat_completion_dictlist(
     mock_aioresponse, openai_chat_completion_config
 ):
     mock_aioresponse.post(
@@ -74,7 +74,7 @@ def test_parrot_openai_chat_completion_dictlist(
         },
     )
     (output_list, usage_stats_sum) = pp.sync_run(
-        pp.parrot_openai_chat_completion_dictlist(
+        pp.parallel_openai_chat_completion_dictlist(
             config=openai_chat_completion_config,
             input_list=[
                 {"input": "what is 1+1?"},
@@ -97,7 +97,7 @@ def test_parrot_openai_chat_completion_dictlist(
 
 
 @pytest.mark.skipif(pd is None, reason="requires pandas")
-def test_parrot_openai_chat_completion_pandas(
+def test_parallel_openai_chat_completion_pandas(
     mock_aioresponse, openai_chat_completion_config
 ):
     mock_aioresponse.post(
@@ -151,7 +151,7 @@ def test_parrot_openai_chat_completion_pandas(
         index=[100, 101],
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parrot_openai_chat_completion_pandas(
+        pp.parallel_openai_chat_completion_pandas(
             config=openai_chat_completion_config,
             input_df=input_df,
             prompt_template="""
@@ -170,7 +170,7 @@ sentiment:""",
     }
 
 
-def test_parrot_openai_chat_completion_exploding_function_dictlist(
+def test_parallel_openai_chat_completion_exploding_function_dictlist(
     mock_aioresponse, openai_chat_completion_config
 ):
     config = openai_chat_completion_config.model_copy()
@@ -259,7 +259,7 @@ def test_parrot_openai_chat_completion_exploding_function_dictlist(
         },
     )
     (output_list, usage_stats_sum) = pp.sync_run(
-        pp.parrot_openai_chat_completion_exploding_function_dictlist(
+        pp.parallel_openai_chat_completion_exploding_function_dictlist(
             config=config,
             input_list=[
                 {
@@ -295,7 +295,7 @@ document: ${input}
 
 
 @pytest.mark.skipif(pd is None, reason="requires pandas")
-def test_parrot_openai_chat_completion_exploding_function_pandas(
+def test_parallel_openai_chat_completion_exploding_function_pandas(
     mock_aioresponse, openai_chat_completion_config
 ):
     config = openai_chat_completion_config.model_copy()
@@ -384,7 +384,7 @@ def test_parrot_openai_chat_completion_exploding_function_pandas(
         },
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parrot_openai_chat_completion_exploding_function_pandas(
+        pp.parallel_openai_chat_completion_exploding_function_pandas(
             config=config,
             input_df=pd.DataFrame(
                 [
