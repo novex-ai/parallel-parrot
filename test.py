@@ -27,9 +27,9 @@ if __name__ == "__main__":
         index=[100, 101],
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parallel_openai_chat_completion_pandas(
+        pp.parallel_text_generation(
             config=config,
-            input_df=input_df,
+            input_data=input_df,
             prompt_template="""
 What is the sentiment of this product review?
 POSITIVE or NEGATIVE?

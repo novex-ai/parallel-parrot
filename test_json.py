@@ -3,7 +3,10 @@ import os
 import logging
 
 import parallel_parrot as pp
-from parallel_parrot.prompt_templates import JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT
+from parallel_parrot.prompt_templates import (
+    JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
+    JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
+)
 
 
 config = pp.OpenAIChatCompletionConfig(
@@ -14,9 +17,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
     (result_dictlist, stats) = pp.sync_run(
-        pp.parallel_openai_chat_completion_dictlist(
+        pp.parallel_data_generation(
             config=config,
-            input_list=[
+            input_data=[
                 {
                     "input": """
             Predict Customer Lifetime Value From Day 1
@@ -41,9 +44,8 @@ Go beyond past customer behavior data and start building forecasts based on accu
                 },
             ],
             prompt_template=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
-            output_key="output",
+            output_key_names=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
         )
     )
     print("-------------------------------")
-    qa_list = pp.auto_explode_json_dictlist(result_dictlist, "output")
-    print(json.dumps(qa_list, indent=2))
+    print(json.dumps(result_dictlist, indent=2))

@@ -15,7 +15,11 @@ ParallelParrotOutput = namedtuple("ParallelParrotOutput", ["output", "usage_stat
 ClientSessionType = Union[ClientSession, RetryClient]
 
 
-class OpenAIChatCompletionConfig(BaseModel):
+class LLMConfig(BaseModel):
+    pass
+
+
+class OpenAIChatCompletionConfig(LLMConfig):
     """
     https://platform.openai.com/docs/api-reference/chat/create
     """

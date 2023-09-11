@@ -2,6 +2,12 @@ from aioresponses import aioresponses
 import pytest
 
 import parallel_parrot as pp
+from parallel_parrot.openai import (
+    parallel_openai_chat_completion_dictlist,
+    parallel_openai_chat_completion_pandas,
+    parallel_openai_chat_completion_exploding_function_dictlist,
+    parallel_openai_chat_completion_exploding_function_pandas,
+)
 
 try:
     import pandas as pd  # type: ignore
@@ -76,7 +82,7 @@ def test_parallel_openai_chat_completion_dictlist(
         },
     )
     (output_list, usage_stats_sum) = pp.sync_run(
-        pp.parallel_openai_chat_completion_dictlist(
+        parallel_openai_chat_completion_dictlist(
             config=config,
             input_list=[
                 {"input": "what is 1+1?"},
@@ -152,7 +158,7 @@ def test_parallel_openai_chat_completion_pandas(
         index=[100, 101],
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parallel_openai_chat_completion_pandas(
+        parallel_openai_chat_completion_pandas(
             config=openai_chat_completion_config,
             input_df=input_df,
             prompt_template="""
@@ -260,7 +266,7 @@ def test_parallel_openai_chat_completion_exploding_function_dictlist(
         },
     )
     (output_list, usage_stats_sum) = pp.sync_run(
-        pp.parallel_openai_chat_completion_exploding_function_dictlist(
+        parallel_openai_chat_completion_exploding_function_dictlist(
             config=config,
             input_list=[
                 {
@@ -385,7 +391,7 @@ def test_parallel_openai_chat_completion_exploding_function_pandas(
         },
     )
     (output_df, usage_stats_sum) = pp.sync_run(
-        pp.parallel_openai_chat_completion_exploding_function_pandas(
+        parallel_openai_chat_completion_exploding_function_pandas(
             config=config,
             input_df=pd.DataFrame(
                 [

@@ -63,3 +63,9 @@ def append_one_to_many_objlist_outputs_pandas(
     output_df = output_df.drop(columns=[extract_dict_colname])
     output_df.reset_index(drop=True, inplace=True)
     return output_df
+
+
+def is_pandas_dataframe(df):
+    if not pandas_installed:
+        return False
+    return isinstance(df, pd.DataFrame)

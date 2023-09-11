@@ -4,6 +4,10 @@ import logging
 
 import parallel_parrot as pp
 from parallel_parrot import sync_run
+from parallel_parrot.prompt_templates import (
+    JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
+    JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
+)
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key=os.environ["OPENAI_API_KEY"],
@@ -15,9 +19,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 async def main():
-    result = await pp.parrot_openai_chat_completion_exploding_function_dictlist(
+    result = await pp.parallel_data_generation(
         config=config,
-        input_list=[
+        input_data=[
             {
                 "input": """
 George Washington (February 22, 1732 - December 14, 1799) was an American military officer, statesman, and Founding Father who served as the first president of the United States from 1789 to 1797. Appointed by the Second Continental Congress as commander of the Continental Army in June 1775, Washington led Patriot forces to victory in the American Revolutionary War and then served as president of the Constitutional Convention in 1787, which drafted and ratified the Constitution of the United States and established the American federal government. Washington has thus been called the "Father of his Country".
@@ -29,13 +33,8 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
                """.strip()
             },
         ],
-        prompt_template="""
-Generate question and answer pairs from the following document.
-Output a list of JSON objects with keys "question" and "answer".
-Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
-document: ${input}
-        """,
-        output_key_names=["question", "answer"],
+        prompt_template=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
+        output_key_names=JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
     )
     print(json.dumps(result, indent=2))
 
