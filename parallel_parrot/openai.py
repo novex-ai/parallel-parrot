@@ -12,10 +12,17 @@ from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompleti
 from .util import (
     logger,
     input_list_to_prompts,
+    sum_usage_stats,
+)
+from .util_dictlist import (
     append_model_outputs_dictlist,
     append_one_to_many_model_outputs_dictlist,
     append_one_to_many_objlist_outputs_dictlist,
-    sum_usage_stats,
+)
+from .util_pandas import (
+    append_model_outputs_pandas,
+    append_one_to_many_model_outputs_pandas,
+    append_one_to_many_objlist_outputs_pandas,
 )
 
 
@@ -36,10 +43,10 @@ async def parrot_openai_chat_completion_pandas(
         prompts=prompts,
         system_message=system_message,
     )
-    output_df = input_df.copy()
-    output_df[output_key] = model_outputs
     if config.n is not None and config.n > 1:
-        output_df = output_df.explode(output_key)
+        output_df = append_one_to_many_model_outputs_pandas(
+            input_df, model_outputs, output_key
+        )
         input_num_rows = len(input_df)
         output_num_rows = len(output_df)
         logger.info(
@@ -47,7 +54,8 @@ async def parrot_openai_chat_completion_pandas(
             f" because {config.n=} is greater than 1."
             f" {input_num_rows=} {output_num_rows=}"
         )
-    output_df = output_df.astype({output_key: "string"})
+    else:
+        output_df = append_model_outputs_pandas(input_df, model_outputs, output_key)
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     return ParallelParrotOutput(output=output_df, usage_stats=usage_stats_sum)
 
@@ -119,6 +127,43 @@ async def parrot_openai_chat_completion_exploding_function_dictlist(
     )
     usage_stats_sum = sum_usage_stats(usage_stats_list)
     return ParallelParrotOutput(output=output_list, usage_stats=usage_stats_sum)
+
+
+async def parrot_openai_chat_completion_exploding_function_pandas(
+    config: OpenAIChatCompletionConfig,
+    input_df: "pd.DataFrame",
+    prompt_template: str,
+    output_key_names: list[str],
+    system_message: Optional[str] = None,
+) -> ParallelParrotOutput:
+    if not pandas_installed:
+        raise ParallelParrotError(
+            "pandas is not installed. Please install pandas to use this function."
+        )
+    prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
+    (functions, function_call) = _prep_function_list_of_objects(
+        function_name="f",
+        parameter_name="p",
+        output_key_names=output_key_names,
+    )
+    (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
+        config=config,
+        prompts=prompts,
+        system_message=system_message,
+        functions=functions,
+        function_call=function_call,
+    )
+    output_df = append_one_to_many_objlist_outputs_pandas(
+        input_df, model_outputs, output_key_names
+    )
+    input_num_rows = len(input_df)
+    output_num_rows = len(output_df)
+    logger.info(
+        "Output may have more rows than input because we are asking for a list of objects. Note that the index is also reset."
+        f" {input_num_rows=} {output_num_rows=}"
+    )
+    usage_stats_sum = sum_usage_stats(usage_stats_list)
+    return ParallelParrotOutput(output=output_df, usage_stats=usage_stats_sum)
 
 
 async def _parrot_openai_chat_completion(
