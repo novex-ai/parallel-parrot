@@ -1,9 +1,7 @@
 try:
     import pandas as pd  # type: ignore
 except ImportError:
-    pandas_installed = False
-else:
-    pandas_installed = True
+    pd = None
 
 import math
 
