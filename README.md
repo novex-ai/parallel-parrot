@@ -103,7 +103,7 @@ Some use-cases are more demanding than the above, and require multiple structure
 
 Some examples of these use cases include:
 - generating multiple question/answer pairs from each input document
-- generating multiple title/summary paris from each input document
+- generating multiple title/summary pairs from each input document
 
 see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
 
