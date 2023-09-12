@@ -5,7 +5,7 @@ A Python library for easily and quickly using LLMs on tabular data.  Because syn
 
 [![PyPI version](https://badge.fury.io/py/parallel-parrot.svg)](https://badge.fury.io/py/parallel-parrot)
 [![Release Notes](https://img.shields.io/github/release/novex-ai/parallel-parrot)](https://github.com/novex-ai/parallel-parrot/releases)
-[![poetry pytest](https://github.com/novex-ai/parallel-parrot/actions/workflows/poetry_pytest.yml/badge.svg?branch=main)](https://github.com/novex-ai/parallel-parrot/actions/workflows/poetry_pytest.yml)
+[![pytest](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
 Use cases:
