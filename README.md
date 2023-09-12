@@ -36,7 +36,7 @@ config = pp.OpenAIChatCompletionConfig(
 )
 ```
 
-see the [declaration](./parallel_parrot/types.py) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.  All parameters that can be passed to the OpenAI API are available.
+see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/types.py#L22) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.  All parameters that can be passed to the OpenAI API are available.
 
 ## Generate Text - pp.parallel_text_generation()
 
@@ -45,7 +45,7 @@ LLM text generation can be used for a wide variety of tasks:
 - Summarization: for making a large number of documents easier to digest/use.
 - Text transformation: such as the removal of PII from text
 
-see the [prompt_templates](./parallel_parrot/prompt_templates.py) for some pre-engineered templates.
+see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
 
 Example of `pp.parallel_text_generation()`:
 ```python
@@ -84,7 +84,7 @@ Some examples of these use cases include:
 - generating multiple question/answer pairs from each input document
 - generating multiple title/summary paris from each input document
 
-see the [prompt_templates](./parallel_parrot/prompt_templates.py) for some pre-engineered templates.
+see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
 
 Example of `pp.parallel_data_generation()`:
 ```python
