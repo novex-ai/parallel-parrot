@@ -102,12 +102,13 @@ def create_chat_completion_client_session(
     # The 409 code (openai.error.TryAgain) is returned when the model needs to warm up.
     # https://github.com/openai/openai-python/blob/1be14ee34a0f8e42d3f9aa5451aa4cb161f1781f/openai/api_requestor.py#L401
     # https://github.com/inyutin/aiohttp_retry/blob/master/aiohttp_retry/retry_options.py#L158
+    # https://platform.openai.com/docs/guides/error-codes/api-errors
     retry_options = JitterRetry(
         attempts=OPENAI_TOTAL_RETRIES,
         start_timeout=1,
         max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
         factor=2.0,
-        statuses={409, 500},
+        statuses={409, 500, 503},
         exceptions={asyncio.TimeoutError},
         random_interval_size=1.5,
         retry_all_server_errors=True,
