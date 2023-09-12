@@ -1,7 +1,7 @@
 from abc import ABC
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import get_origin, Optional, Union
+from typing import Optional, Union
 
 from aiohttp import ClientSession
 from aiohttp_retry import RetryClient
