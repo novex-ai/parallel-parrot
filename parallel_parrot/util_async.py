@@ -1,6 +1,7 @@
 import asyncio
 from typing import Coroutine, Any
 import sys
+import warnings
 
 try:
     import uvloop  # type: ignore
@@ -19,6 +20,11 @@ def is_inside_event_loop() -> bool:
     This means that we should use await directly.
     https://ipython.readthedocs.io/en/stable/interactive/autoawait.html
     """
+    warnings.filterwarnings(
+        "ignore",
+        message="coroutine 'sleep' was never awaited",
+        module="parallel_parrot",
+    )
     try:
         asyncio.run(asyncio.sleep(0))
         return False
