@@ -87,7 +87,7 @@ sentiment:""",
     output_key="sentiment",
 )
 
-if pp.is_ipython_autoawait():  # check if running in a notebook with autoawait "magic"
+if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
     pp.register_uvloop()
     (output, usage_stats) = await async_coro
 else:
@@ -154,7 +154,7 @@ document: ${input}
     output_key_names: ["question", "answer"]
 )
 
-if pp.is_ipython_autoawait():  # check if running in a notebook with autoawait "magic"
+if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
     pp.register_uvloop()
     (output, usage_stats) = await async_coro
 else:

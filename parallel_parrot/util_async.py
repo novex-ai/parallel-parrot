@@ -13,20 +13,17 @@ else:
 from .util import logger
 
 
-def is_ipython_autoawait() -> bool:
+def is_inside_event_loop() -> bool:
     """
-    Test if IPython autoawait is enabled.
-    This allows us to test if ipython is altering our python repl, making sync_run() fail.
+    Test if we are within an event loop, as with ipython autoawait.
+    This means that we should use await directly.
     https://ipython.readthedocs.io/en/stable/interactive/autoawait.html
     """
     try:
-        if "get_ipython" in globals():
-            ipython = globals().get("get_ipython")()  # type: ignore
-            if ipython and ipython.autoawait:
-                return True
-    except Exception:
-        logger.warn("Failed to check if IPython autoawait is enabled.", exc_info=True)
-    return False
+        asyncio.run(asyncio.sleep(0))
+        return False
+    except RuntimeError:
+        return True
 
 
 def register_uvloop() -> None:
@@ -45,7 +42,7 @@ def sync_run(runnable: Coroutine) -> Any:
     """
     Run an async coroutine synchronously.
     """
-    if is_ipython_autoawait():
+    if is_inside_event_loop():
         raise Exception(
             "Do not use sync_run() and instead just use await."
             " This is because IPython autoawait is enabled."

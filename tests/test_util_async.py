@@ -1,8 +1,8 @@
-from parallel_parrot.util_async import is_ipython_autoawait, register_uvloop, sync_run
+from parallel_parrot.util_async import is_inside_event_loop, register_uvloop, sync_run
 
 
-def test_is_ipython_autoawait():
-    assert is_ipython_autoawait() is False
+def test_is_inside_event_loop():
+    assert is_inside_event_loop() is False
 
 
 def test_register_uvloop():
