@@ -33,7 +33,7 @@ async def parallel_text_generation(
 
     Note:
     - If the LLM generates multiple outputs (n > 1 for OpenAI), the output may have more rows than the input.
-    - If no output is generated, then None of math.nan is returned.
+    - If no output is generated, then None or math.nan is returned.
     """
     if not isinstance(config, OpenAIChatCompletionConfig):
         raise Exception("Only OpenAIChatCompletionConfig is supported for now")
@@ -76,7 +76,7 @@ async def parallel_data_generation(
     - mapping each returned dictionary to a row in the output dataframe or list of dictionaries
 
     Note:
-    - If no output is generated, then None of math.nan is returned.
+    - If no output is generated, then None or math.nan is returned.
     """
     if not isinstance(config, OpenAIChatCompletionConfig):
         raise Exception("Only OpenAIChatCompletionConfig is supported for now")

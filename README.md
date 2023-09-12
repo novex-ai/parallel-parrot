@@ -9,27 +9,27 @@ A Python library for easily and quickly using LLMs on tabular data.  Because syn
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
 Use cases:
-- generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
-- sentiment analysis on a large number of documents
-- data extraction and summarization
-- removal of personal identifiers
-- generate instructions from documents for fine tuning of LLMs
+- Generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
+- Sentiment analysis or summarization on a large number of documents
+- Data extraction and summarization
+- Removal of personal identifiers
+- Generate instructions from documents for fine tuning of LLMs
 
 Main Features:
-- Operates on both pandas dataframes and native python lists of dictionaries
+- Supports both pandas dataframes and native python lists of dictionaries
 - Supports OpenAI Chat Completion API, with structured output "functions" (more LLMs planned in the future)
-- Prepare data for fine-tuning
+- Output formatted data for fine-tuning
 
 Other Features:
-- Fast asynchronous (concurrent) requests using aiohttp and uvloop
+- Fast asynchronous (concurrent) requests using aiohttp and uvloop, with support for notebook environments
 - Python logging support
-- Runs a single request first, without retries.  This helps in troubleshooting API access, with a cleaner stacktrace if, for example, the API token is incorrect.
-Also, uses that request to pull [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to optimize the parallel requests to run as fast as possible.
-- Automatic retries, with exponential backoff, jitter, and header-based delays
-- Uses simple/performant Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
+- Runs a single request first, without retries.  This helps in troubleshooting API access, with a clean stacktrace for authorization and access errors.
+Also, uses that request to pull [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to configure the parallel requests to run as fast as possible.
+- Automatic retries, with exponential backoff, jitter, and dynamic header-based delays
+- Uses standard Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
 - "Batteries included" with pre-engineered prompt templates
-- Tracking of API usage statistics, to support cost controls
-- Supports pandas 1.x and 2.x APIs
+- Tracks and returns token usage statistics, to support cost controls
+- Supports `pandas` 1.x and 2.x APIs
 
 
 ## Getting Started
@@ -47,17 +47,19 @@ config = pp.OpenAIChatCompletionConfig(
 )
 ```
 
-see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/types.py#L22) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.
+see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.3.2/parallel_parrot/types.py#L27) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.
 All [Open API parameters](https://platform.openai.com/docs/api-reference/chat/create) can be passed.  Note that only models supported by the [OpenAI Chat Completions API](https://platform.openai.com/docs/guides/gpt/gpt-models) can be used with this configuration.
 
 ## Generate Text - pp.parallel_text_generation()
 
-LLM text generation can be used for a wide variety of tasks:
-- Sentiment analysis: for understanding large amounts of customer input.
-- Summarization: for making a large number of documents easier to digest/use.
-- Text transformation: such as the removal of PII from text
+This function executes parallel text generation/completion using a LLM.
 
-see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
+It does so by:
+- Taking in a dataframe or list of dictionaries
+- Applying the python prompt template to each row.  Column names are used as the variable names in the template.
+- Calling the LLM API with the prompt for each row
+- Appending the output to the input dataframe or list of dictionaries using the output_key.
+- Input values are passed through to the outputs to permit custom logic
 
 Example of `pp.parallel_text_generation()`:
 ```python
@@ -112,17 +114,27 @@ example output:
 ]
 ```
 
-_Note: If your config includes `n` > 1, then multiple LLM outputs per prompt are created.  This package dedupes those outputs, and may then create multiple rows in the output for a given input row_
+Note:
+- If the LLM generates multiple outputs (n > 1 for OpenAI), outputs are deduped, then exploded.  Outputs may then contain more rows than the input.
+- If no output is generated, then None or math.nan is returned.
+- See the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.3.2/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
 
 ## Generate Data - pp.parallel_data_generation()
 
-Some use-cases are more demanding than the above, and require multiple structured outputs.  This package handles all of that API and data wrangling for you.
+Some use-cases are more demanding than the above, and require more complicated outputs.  This function supports prompts which expect to generate lists of dictionaries.
 
 Some examples of these use cases include:
 - generating multiple question/answer pairs from each input document
 - generating multiple title/summary pairs from each input document
 
-see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
+It does so by:
+- Taking in a dataframe or list of dictionaries
+- Applying the python prompt template to each row.  Column names are used as the variable names in the template.
+- Generating a modified prompt / API call to specify that we want a list of objects,
+  with each object containing values for each of the output_key_names.
+- Calling the LLM API with the prompt for each row
+- Parsing the returned JSON data into a list of dictionaries
+- Mapping each returned dictionary to a row in the output dataframe or list of dictionaries
 
 Example of `pp.parallel_data_generation()`:
 ```python
@@ -196,7 +208,7 @@ example output:
 
 Notice that multiple output rows are created for each input, based on what the LLM returns.  All input columns/keys are retained, to permit integration (joining) with other code.
 
-_Note: Despite the function name, this is not the only way that data can be generated from an LLM.  However, it is powerful enough for many use-cases._
+If no output is generated (an empty list, or an empty string, or malformed JSON), then None (for lists of dictionaries) or math.nan (for pandas dataframes) is returned for each key in `output_key_names`.
 
 ## Prepare Fine-Tuning Data for OpenAI - pp.write_openai_fine_tuning_jsonl()
 
