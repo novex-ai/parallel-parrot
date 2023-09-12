@@ -151,7 +151,7 @@ Output a list of JSON objects with keys "question" and "answer".
 Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
 document: ${input}
     """,
-    output_key_names: ["question", "answer"]
+    output_key_names=["question", "answer"]
 )
 
 if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
