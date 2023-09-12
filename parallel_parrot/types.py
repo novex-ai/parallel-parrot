@@ -1,9 +1,11 @@
+from abc import ABC
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import Optional, Union
 
 from aiohttp import ClientSession
 from aiohttp_retry import RetryClient
-from pydantic import BaseModel
+from dataclass_utils import check_type
 
 
 class ParallelParrotError(Exception):
@@ -15,10 +17,13 @@ ParallelParrotOutput = namedtuple("ParallelParrotOutput", ["output", "usage_stat
 ClientSessionType = Union[ClientSession, RetryClient]
 
 
-class LLMConfig(BaseModel):
-    pass
+@dataclass()
+class LLMConfig(ABC):
+    def __post_init__(self):
+        check_type(self)
 
 
+@dataclass()
 class OpenAIChatCompletionConfig(LLMConfig):
     """
     https://platform.openai.com/docs/api-reference/chat/create

@@ -102,12 +102,13 @@ def create_chat_completion_client_session(
     # The 409 code (openai.error.TryAgain) is returned when the model needs to warm up.
     # https://github.com/openai/openai-python/blob/1be14ee34a0f8e42d3f9aa5451aa4cb161f1781f/openai/api_requestor.py#L401
     # https://github.com/inyutin/aiohttp_retry/blob/master/aiohttp_retry/retry_options.py#L158
+    # https://platform.openai.com/docs/guides/error-codes/api-errors
     retry_options = JitterRetry(
         attempts=OPENAI_TOTAL_RETRIES,
         start_timeout=1,
         max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
         factor=2.0,
-        statuses={409, 500},
+        statuses={409, 500, 503},
         exceptions={asyncio.TimeoutError},
         random_interval_size=1.5,
         retry_all_server_errors=True,
@@ -150,8 +151,13 @@ async def _chat_completion_with_ratelimit(
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        logger.debug(f"Response {response.status=} from {payload=} {response.headers=}")
+        logger.debug(
+            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
+        )
         if response.status == 429:
+            reason = str(response.reason)
+            if "exceeded your current quota" in reason:
+                raise ParallelParrotError(f"{response.status=} {reason=}")
             if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
                 raise ParallelParrotError(
                     f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
@@ -193,7 +199,9 @@ async def do_chat_completion_simple(
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        logger.info(f"Response {response.status=} from {payload=} {response.headers=}")
+        logger.info(
+            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
+        )
         response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")

@@ -1,3 +1,5 @@
+import dataclasses
+
 from aioresponses import aioresponses
 import pytest
 
@@ -31,8 +33,10 @@ def openai_chat_completion_config():
 def test_parallel_openai_chat_completion_dictlist(
     mock_aioresponse, openai_chat_completion_config
 ):
-    config = openai_chat_completion_config.model_copy()
-    config.system_message = "you are a super-precise calculator that returns correct answers in integer form"
+    config = dataclasses.replace(
+        openai_chat_completion_config,
+        system_message="you are a super-precise calculator that returns correct answers in integer form",
+    )
     mock_aioresponse.post(
         "https://api.openai.com/v1/chat/completions",
         headers={
@@ -180,8 +184,10 @@ sentiment:""",
 def test_parallel_openai_chat_completion_exploding_function_dictlist(
     mock_aioresponse, openai_chat_completion_config
 ):
-    config = openai_chat_completion_config.model_copy()
-    config.n = 2
+    config = dataclasses.replace(
+        openai_chat_completion_config,
+        n=2,
+    )
     mock_aioresponse.post(
         "https://api.openai.com/v1/chat/completions",
         headers={
@@ -305,8 +311,10 @@ document: ${input}
 def test_parallel_openai_chat_completion_exploding_function_pandas(
     mock_aioresponse, openai_chat_completion_config
 ):
-    config = openai_chat_completion_config.model_copy()
-    config.n = 2
+    config = dataclasses.replace(
+        openai_chat_completion_config,
+        n=2,
+    )
     mock_aioresponse.post(
         "https://api.openai.com/v1/chat/completions",
         headers={
