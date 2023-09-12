@@ -103,6 +103,7 @@ example output:
 ]
 ```
 
+_Note: If your config includes `n` > 1, then multiple LLM outputs per prompt are created.  This package dedupes those outputs, and may then create multiple rows in the output for a given input row_
 
 ## Generate Data - pp.parallel_data_generation()
 
@@ -180,6 +181,10 @@ example output:
 ]
 ```
 
+Notice that multiple output rows are created for each input, based on what the LLM returns.  All input columns/keys are retained, to permit integration (joining) with other code.
+
+_Note: Despite the function name, this is not the only way that data can be generated from an LLM.  However, it is powerful enough for many use-cases._
+
 ## Prepare Fine-Tuning Data for OpenAI - pp.write_openai_fine_tuning_jsonl()
 
 If you need to do [OpenAI Fine Tuning](https://platform.openai.com/docs/guides/fine-tuning) - but find it a pain to
@@ -215,7 +220,7 @@ paths = pp.write_openai_fine_tuning_jsonl(
 print(json.dumps(paths, indent=2, default=str))
 ```
 
-This will create files that can be sent directly to the [OpenAI Fine Tuning API](https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset)
+This will create files that can be sent directly to the [OpenAI Fine Tuning API](https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset).  Doing so with this example will result in an LLM which knows more than the average parrot about presidents of the USA.
 
 example output paths:
 ```
