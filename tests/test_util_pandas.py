@@ -13,8 +13,9 @@ from parallel_parrot.util_pandas import (
     append_one_to_many_objlist_outputs_pandas,
 )
 
+pytestmark = pytest.mark.skipif(pd is None, reason="requires pandas")
 
-@pytest.mark.skipif(pd is None, reason="requires pandas")
+
 def test_append_model_outputs_pandas():
     input_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
     model_outputs = ["alpha", "beta", "gamma"]
@@ -29,7 +30,6 @@ def test_append_model_outputs_pandas():
     pd.testing.assert_frame_equal(output_df, expected_output_df)
 
 
-@pytest.mark.skipif(pd is None, reason="requires pandas")
 def test_append_one_to_many_model_outputs_pandas():
     input_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
     model_outputs = [[], ["beta1", "beta2"], ["gamma1", "gamma2", "gamma3"]]
@@ -46,7 +46,6 @@ def test_append_one_to_many_model_outputs_pandas():
     pd.testing.assert_frame_equal(output_df, expected_output_df)
 
 
-@pytest.mark.skipif(pd is None, reason="requires pandas")
 def test_append_one_to_many_objlist_outputs_pandas():
     input_df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
     objlist_outputs = [
