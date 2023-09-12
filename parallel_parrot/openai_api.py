@@ -151,8 +151,13 @@ async def _chat_completion_with_ratelimit(
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        logger.debug(f"Response {response.status=} from {payload=} {response.headers=}")
+        logger.debug(
+            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
+        )
         if response.status == 429:
+            reason = str(response.reason)
+            if "exceeded your current quota" in reason:
+                raise ParallelParrotError(f"{response.status=} {reason=}")
             if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
                 raise ParallelParrotError(
                     f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
@@ -194,7 +199,9 @@ async def do_chat_completion_simple(
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        logger.info(f"Response {response.status=} from {payload=} {response.headers=}")
+        logger.info(
+            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
+        )
         response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")
