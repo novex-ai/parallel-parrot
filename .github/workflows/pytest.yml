@@ -1,6 +1,6 @@
 # adapted from
 # https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#caching-packages
-name: poetry pytest
+name: pytest
 
 on:
   push:
