@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import tiktoken
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from .util import logger
 
@@ -11,13 +11,13 @@ FINE_TUNING_MAX_TOKENS = 4096
 
 
 def write_openai_fine_tuning_jsonl(
-    input_dictlist: list[dict],
+    input_dictlist: List[dict],
     prompt_key: str,
     completion_key: str,
     system_message: Optional[str],
     model: str,
     output_file_prefix: Union[str, Path],
-) -> list[str]:
+) -> List[str]:
     jsonl_generator = openai_fine_tuning_jsonl_generator(
         input_dictlist=input_dictlist,
         prompt_key=prompt_key,
@@ -66,7 +66,7 @@ def write_openai_fine_tuning_jsonl(
 
 
 def openai_fine_tuning_jsonl_generator(
-    input_dictlist: list[dict],
+    input_dictlist: List[dict],
     prompt_key: str,
     completion_key: str,
     system_message: Optional[str],

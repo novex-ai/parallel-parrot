@@ -1,7 +1,7 @@
 from abc import ABC
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from aiohttp import ClientSession
 from aiohttp_retry import RetryClient
@@ -39,5 +39,5 @@ class OpenAIChatCompletionConfig(LLMConfig):
     max_tokens: Optional[int] = None
     presence_penalty: Optional[float] = None
     frequency_penalty: Optional[float] = None
-    logit_bias: Optional[dict[str, float]] = None
+    logit_bias: Optional[Dict[str, float]] = None
     user: Optional[str] = None

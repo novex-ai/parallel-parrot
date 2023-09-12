@@ -2,6 +2,7 @@ from functools import reduce
 import logging
 from string import Template
 import sys
+from typing import List
 
 from .types import ParallelParrotError
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__.split(".")[0])
 logger.addHandler(logging.NullHandler())
 
 
-def input_list_to_prompts(input_list: list[dict], prompt_template: str) -> list[str]:
+def input_list_to_prompts(input_list: List[dict], prompt_template: str) -> List[str]:
     if len(input_list) == 0:
         raise ParallelParrotError(
             f"Input data must not be empty: input={repr(input_list)}"
@@ -30,7 +31,7 @@ def input_list_to_prompts(input_list: list[dict], prompt_template: str) -> list[
     return prompts
 
 
-def sum_usage_stats(usage_stats_list: list[dict]) -> dict:
+def sum_usage_stats(usage_stats_list: List[dict]) -> dict:
     return reduce(
         lambda x, y: {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)},
         usage_stats_list,

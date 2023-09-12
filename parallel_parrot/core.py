@@ -4,7 +4,7 @@ except ImportError:
     pass
 
 
-from typing import Union
+from typing import List, Union
 
 from .openai import (
     parallel_openai_chat_completion_dictlist,
@@ -18,7 +18,7 @@ from .util_pandas import is_pandas_dataframe
 
 async def parallel_text_generation(
     config: LLMConfig,
-    input_data: Union[list[dict], "pd.DataFrame"],
+    input_data: Union[List[dict], "pd.DataFrame"],
     prompt_template: str,
     output_key: str,
 ):
@@ -59,9 +59,9 @@ async def parallel_text_generation(
 
 async def parallel_data_generation(
     config: LLMConfig,
-    input_data: Union[list[dict], "pd.DataFrame"],
+    input_data: Union[List[dict], "pd.DataFrame"],
     prompt_template: str,
-    output_key_names: list[str],
+    output_key_names: List[str],
 ):
     """
     This function uses an LLM to generate structured data.

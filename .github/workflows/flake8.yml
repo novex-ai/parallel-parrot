@@ -12,9 +12,9 @@ jobs:
       - name: Set up Python environment
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.8"
       - name: flake8 Lint
         uses: py-actions/flake8@v2
         with:
           path: "parallel_parrot"
-          flake8-version: "6.1.0"
+          flake8-version: "5.0.4"

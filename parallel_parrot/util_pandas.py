@@ -6,16 +6,16 @@ else:
     pandas_installed = True
 
 import math
-from typing import Optional
+from typing import List, Optional
 
 from .types import ParallelParrotError
 
 
 def append_model_outputs_pandas(
     input_df: "pd.DataFrame",
-    model_outputs: list[Optional[str]],
+    model_outputs: List[Optional[str]],
     output_key: str,
-):
+) -> "pd.DataFrame":
     if not pandas_installed:
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
@@ -27,9 +27,9 @@ def append_model_outputs_pandas(
 
 def append_one_to_many_model_outputs_pandas(
     input_df: "pd.DataFrame",
-    model_outputs: list[list[Optional[str]]],
+    model_outputs: List[List[Optional[str]]],
     output_key: str,
-):
+) -> "pd.DataFrame":
     if not pandas_installed:
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
@@ -43,9 +43,9 @@ def append_one_to_many_model_outputs_pandas(
 
 def append_one_to_many_objlist_outputs_pandas(
     input_df: "pd.DataFrame",
-    objlist_outputs: list[list[dict]],
-    output_key_names: list[str],
-):
+    objlist_outputs: List[List[dict]],
+    output_key_names: List[str],
+) -> "pd.DataFrame":
     if not pandas_installed:
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
