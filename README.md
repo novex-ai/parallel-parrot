@@ -22,7 +22,10 @@ Other Features:
 Also, uses that request to pull [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to optimize the parallel requests to run as fast as possible.
 - Automatic retries, with exponential backoff, jitter, and header-based delays
 - Uses simple/performant Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
+- "Batteries included" with pre-engineered prompt templates
 - Tracking of API usage statistics, to support cost controls
+- Supports pandas 1.x and 2.x APIs
+
 
 ## Getting Started
 
