@@ -76,18 +76,23 @@ input_data = [
     }
 ]
 
-(output, usage_stats) = pp.sync_run(
-    pp.parallel_text_generation(
-        config=config,
-        input_data=input_data,
-        prompt_template="""
+async_coro = pp.parallel_text_generation(
+    config=config,
+    input_data=input_data,
+    prompt_template="""
 What is the sentiment of this product review?
 POSITIVE, NEUTRAL or NEGATIVE?
 product review: ${input}
 sentiment:""",
-        output_key="sentiment",
-    )
+    output_key="sentiment",
 )
+
+if pp.is_ipython_autoawait():
+    pp.register_uvloop()
+    (output, usage_stats) = await async_coro
+else:
+    (output, usage_stats) = pp.sync_run(async_coro)
+
 print(json.dumps(output, indent=2))
 ```
 
@@ -137,19 +142,23 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
     },
 ]
 
-(output, usage_stats) = pp.sync_run(
-    pp.parallel_data_generation(
-        config=config,
-        input_data=input_data,
-        prompt_template="""
+async_coro = pp.parallel_data_generation(
+    config=config,
+    input_data=input_data,
+    prompt_template="""
 Generate question and answer pairs from the following document.
 Output a list of JSON objects with keys "question" and "answer".
 Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
 document: ${input}
-        """,
-        output_key_names: ["question", "answer"]
-    )
+    """,
+    output_key_names: ["question", "answer"]
 )
+
+if pp.is_ipython_autoawait():
+    pp.register_uvloop()
+    (output, usage_stats) = await async_coro
+else:
+    (output, usage_stats) = pp.sync_run(async_coro)
 print(json.dumps(output, indent=2))
 ```
 
