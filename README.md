@@ -14,6 +14,7 @@ Use cases:
 Main Features:
 - Operates on both pandas dataframes and native python lists of dictionaries
 - Supports OpenAI Chat Completion API, with structured output "functions" (more LLMs planned in the future)
+- Prepare data for fine-tuning
 
 Other Features:
 - Fast asynchronous (concurrent) requests using aiohttp and uvloop
@@ -177,4 +178,47 @@ example output:
     "answer": "John Adams was an American statesman, attorney, diplomat, writer, and Founding Father."
   },
 ]
+```
+
+## Prepare Fine-Tuning Data for OpenAI - pp.write_openai_fine_tuning_jsonl()
+
+If you need to do [OpenAI Fine Tuning](https://platform.openai.com/docs/guides/fine-tuning) - but find it a pain to
+split your data at appropriate token counts in jsonl format, the `parrallel-parrot` can help with this as well.
+
+```python
+import json
+import parallel_parrot as pp
+
+input_dictlist = [
+  {
+    "question": "Who was the first president of the United States?",
+    "answer": "George Washington"
+  },
+  {
+    "question": "What position did George Washington hold during the American Revolutionary War?",
+    "answer": "Commander of the Continental Army"
+  },
+  {
+    "question": "What document did George Washington help draft and ratify?",
+    "answer": "The Constitution of the United States"
+  },
+]
+
+paths = pp.write_openai_fine_tuning_jsonl(
+    input_dictlist=input_dictlist,
+    prompt_key="question",
+    completion_key="answer",
+    system_message="",
+    model="gpt-3.5-turbo-0613",  # used to calculate token counts
+    output_file_prefix="/tmp/parallel_parrot/test_fine_tuning",
+)
+print(json.dumps(paths, indent=2, default=str))
+```
+
+This will create files that can be sent directly to the [OpenAI Fine Tuning API](https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset)
+
+example output paths:
+```
+/tmp/parallel_parrot/test_fine_tuning.00001.jsonl
+/tmp/parallel_parrot/test_fine_tuning.00002.jsonl
 ```
