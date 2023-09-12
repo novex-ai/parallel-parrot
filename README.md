@@ -36,7 +36,8 @@ config = pp.OpenAIChatCompletionConfig(
 )
 ```
 
-see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/types.py#L22) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.  All parameters that can be passed to the OpenAI API are available.
+see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/types.py#L22) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.
+All [Open API parameters](https://platform.openai.com/docs/api-reference/chat/create) can be passed.
 
 ## Generate Text - pp.parallel_text_generation()
 
@@ -49,6 +50,9 @@ see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1
 
 Example of `pp.parallel_text_generation()`:
 ```python
+import json
+import parallel_parrot as pp
+
 
 input_data = [
     {
@@ -73,8 +77,25 @@ sentiment:""",
         output_key="sentiment",
     )
 )
-print(f"{output=}")
+print(json.dumps(output, indent=2))
 ```
+
+example output:
+```json
+[
+    {
+        "input": "this is a super duper product that will change the world",
+        "source": "shopify",
+        "sentiment": "POSITIVE",
+    },
+    {
+        "input": "this is a horrible product that does not work",
+        "source": "amazon",
+        "sentiment": "NEGATIVE",
+    }
+]
+```
+
 
 ## Generate Data - pp.parallel_data_generation()
 
@@ -88,6 +109,8 @@ see the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.1
 
 Example of `pp.parallel_data_generation()`:
 ```python
+import json
+import parallel_parrot as pp
 
 input_data = [
     {
@@ -115,5 +138,37 @@ document: ${input}
         output_key_names: ["question", "answer"]
     )
 )
-print(f"{output=}")
+print(json.dumps(output, indent=2))
+```
+
+example output:
+```json
+[
+  {
+    "input": "...",
+    "question": "Who was the first president of the United States?",
+    "answer": "George Washington"
+  },
+  {
+    "input": "...",
+    "question": "What position did George Washington hold during the American Revolutionary War?",
+    "answer": "Commander of the Continental Army"
+  },
+  {
+    "input": "...",
+    "question": "What document did George Washington help draft and ratify?",
+    "answer": "The Constitution of the United States"
+  },
+  // more examples omitted
+  {
+    "input": "...",
+    "question": "Who were some important contemporaries that John Adams corresponded with?",
+    "answer": "Adams regularly corresponded with important contemporaries, including his wife and adviser Abigail Adams and his friend and political rival Thomas Jefferson."
+  },
+  {
+    "input": "...",
+    "question": "Who was John Adams?",
+    "answer": "John Adams was an American statesman, attorney, diplomat, writer, and Founding Father."
+  },
+]
 ```
