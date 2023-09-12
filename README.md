@@ -2,7 +2,6 @@
 
 A Python library for easily and quickly using LLMs on tabular data.  Because synchronous for-loops are too slow, and parallelism can be a pain.
 
-
 [![PyPI version](https://badge.fury.io/py/parallel-parrot.svg)](https://badge.fury.io/py/parallel-parrot)
 [![Release Notes](https://img.shields.io/github/release/novex-ai/parallel-parrot)](https://github.com/novex-ai/parallel-parrot/releases)
 [![pytest](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml)
@@ -23,8 +22,6 @@ Main Features:
 Other Features:
 - Fast asynchronous (concurrent) requests using aiohttp and uvloop, with support for notebook environments
 - Python logging support
-- Runs a single request first, without retries.  This helps in troubleshooting API access, with a clean stacktrace for authorization and access errors.
-Also, uses that request to pull [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to configure the parallel requests to run as fast as possible.
 - Automatic retries, with exponential backoff, jitter, and dynamic header-based delays
 - Uses standard Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
 - "Batteries included" with pre-engineered prompt templates
@@ -55,11 +52,13 @@ All [Open API parameters](https://platform.openai.com/docs/api-reference/chat/cr
 This function executes parallel text generation/completion using a LLM.
 
 It does so by:
-- Taking in a dataframe or list of dictionaries
+- Taking in a dataframe or list of dictionaries.
 - Applying the python prompt template to each row.  Column names are used as the variable names in the template.
-- Calling the LLM API with the prompt for each row
+- Calling the LLM API with the prompt for each row.  Runs a single request first, for two reasons:
+  - Test access to the API, including credentials, without retries or complicated calling mechanics.
+  - Uses that request to automatically obtain [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to configure the parallel requests to run with maximum concurrency.
 - Appending the output to the input dataframe or list of dictionaries using the output_key.
-- Input values are passed through to the outputs to permit custom logic
+- Input values are passed through to the outputs to permit custom logic.
 
 Example of `pp.parallel_text_generation()`:
 ```python
@@ -121,11 +120,12 @@ Note:
 
 ## Generate Data - pp.parallel_data_generation()
 
-Some use-cases are more demanding than the above, and require more complicated outputs.  This function supports prompts which expect to generate lists of dictionaries.
+Some use-cases are more demanding than the above, and require more complicated outputs.
+This function supports concurrent/parallel exeuction of prompts which expect to generate lists of dictionaries.
 
 Some examples of these use cases include:
-- generating multiple question/answer pairs from each input document
-- generating multiple title/summary pairs from each input document
+- Generating multiple question/answer pairs from each input document
+- Generating multiple title/summary pairs from each input document
 
 It does so by:
 - Taking in a dataframe or list of dictionaries
@@ -134,7 +134,8 @@ It does so by:
   with each object containing values for each of the output_key_names.
 - Calling the LLM API with the prompt for each row
 - Parsing the returned JSON data into a list of dictionaries
-- Mapping each returned dictionary to a row in the output dataframe or list of dictionaries
+- Mapping each returned dictionary to a row in the output dataframe or list of dictionaries.  This will result in "exploded" output, where
+  the output will contain more than one row for a given input.
 
 Example of `pp.parallel_data_generation()`:
 ```python
@@ -207,6 +208,9 @@ example output:
 ```
 
 Notice that multiple output rows are created for each input, based on what the LLM returns.  All input columns/keys are retained, to permit integration (joining) with other code.
+
+If more than one continuation/response is requested per prompt (e.g. `n` > 1 for OpenAI), then these
+are also seamlessly combined in the outputs.
 
 If no output is generated (an empty list, or an empty string, or malformed JSON), then None (for lists of dictionaries) or math.nan (for pandas dataframes) is returned for each key in `output_key_names`.
 
