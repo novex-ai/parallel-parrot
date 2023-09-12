@@ -1,25 +1,28 @@
 # parallel-parrot
 
-A Python library for easily and efficiently using LLMs on tabular data.
+A Python library for easily and quickly using LLMs on tabular data.  Because synchronous for-loops are too slow, and parallelism can be a pain.
 
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
-Some use cases:
+Use cases:
 - generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
 - sentiment analysis on a large number of documents
 - data extraction and summarization
 - removal of personal identifiers
 - generate instructions from documents for fine tuning of LLMs
 
-Features:
+Main Features:
 - Operates on both pandas dataframes and native python lists of dictionaries
-- Supports OpenAI Chat Completion API, with structured output ("functions") - more LLMs planned in the future
-- Automatically determines your rate limit from the API and executes API requests in parallel, as fast as possible
-- Automatic retries, with exponential backoff and jitter
-- Uses simple/robust Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) for prompt templates
-- create fine-tuning jsonl files from data that also avoids truncation due to token limits
-- tracking of API usage statistics, to support cost governance
-- fast asynchronous (concurrent) requests using aiohttp and uvloop
+- Supports OpenAI Chat Completion API, with structured output "functions" (more LLMs planned in the future)
+
+Other Features:
+- Fast asynchronous (concurrent) requests using aiohttp and uvloop
+- Python logging support
+- Runs a single request first, without retries.  This helps in troubleshooting API access, with a cleaner stacktrace if, for example, the API token is incorrect.
+Also, uses that request to pull [rate limit information](https://platform.openai.com/docs/guides/rate-limits) from the OpenAI API to optimize the parallel requests to run as fast as possible.
+- Automatic retries, with exponential backoff, jitter, and header-based delays
+- Uses simple/performant Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
+- Tracking of API usage statistics, to support cost controls
 
 ## Getting Started
 
@@ -37,7 +40,7 @@ config = pp.OpenAIChatCompletionConfig(
 ```
 
 see the [declaration](https://github.com/novex-ai/parallel-parrot/blob/v0.1.0/parallel_parrot/types.py#L22) of `OpenAIChatCompletionConfig` for more available parameters, including the `system_message`.
-All [Open API parameters](https://platform.openai.com/docs/api-reference/chat/create) can be passed.
+All [Open API parameters](https://platform.openai.com/docs/api-reference/chat/create) can be passed.  Note that only models supported by the [OpenAI Chat Completions API](https://platform.openai.com/docs/guides/gpt/gpt-models) can be used with this configuration.
 
 ## Generate Text - pp.parallel_text_generation()
 
