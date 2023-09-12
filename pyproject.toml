@@ -10,7 +10,8 @@ repository = "https://github.com/novex-ai/parallel-parrot"
 keywords = ["generative ai", "pandas", "llm", "parallel", "openai"]
 
 [tool.poetry.urls]
-Changelog = "https://github.com/novex-ai/parallel-parrot/releases"
+changelog = "https://github.com/novex-ai/parallel-parrot/releases"
+issues = "https://github.com/novex-ai/parallel-parrot/issues"
 
 [tool.poetry.dependencies]
 python = "^3.8"
