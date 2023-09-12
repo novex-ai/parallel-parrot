@@ -5,7 +5,7 @@ except ImportError:
 else:
     pandas_installed = True
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
 from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompletionConfig
@@ -28,7 +28,7 @@ from .util_pandas import (
 
 async def parallel_openai_chat_completion_dictlist(
     config: OpenAIChatCompletionConfig,
-    input_list: list[dict],
+    input_list: List[dict],
     prompt_template: str,
     output_key: str,
 ) -> ParallelParrotOutput:
@@ -90,9 +90,9 @@ async def parallel_openai_chat_completion_pandas(
 
 async def parallel_openai_chat_completion_exploding_function_dictlist(
     config: OpenAIChatCompletionConfig,
-    input_list: list[dict],
+    input_list: List[dict],
     prompt_template: str,
-    output_key_names: list[str],
+    output_key_names: List[str],
 ) -> ParallelParrotOutput:
     """
     Process a prompt which generates a list of objects.
@@ -127,7 +127,7 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
     config: OpenAIChatCompletionConfig,
     input_df: "pd.DataFrame",
     prompt_template: str,
-    output_key_names: list[str],
+    output_key_names: List[str],
 ) -> ParallelParrotOutput:
     if not pandas_installed:
         raise ParallelParrotError(
@@ -160,8 +160,8 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
 
 async def _parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    prompts: list[str],
-    functions: Optional[list[dict]] = None,
+    prompts: List[str],
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:
     # process a single row first, both to check for errors and to get the ratelimit_limit_requests
@@ -188,7 +188,7 @@ async def _parrot_openai_chat_completion(
 
 
 def _prep_function_list_of_objects(
-    function_name: str, parameter_name: str, output_key_names: list[str]
+    function_name: str, parameter_name: str, output_key_names: List[str]
 ):
     if len(output_key_names) == 0:
         raise ParallelParrotError(f"{output_key_names=} must not be empty")

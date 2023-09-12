@@ -1,11 +1,11 @@
 import copy
 import json
-from typing import Optional
+from typing import List, Optional
 
 
 def append_model_outputs_dictlist(
-    input_list: list[dict], model_outputs: list[Optional[str]], output_key: str
-):
+    input_list: List[dict], model_outputs: List[Optional[str]], output_key: str
+) -> List:
     output_list = [copy.copy(input_dict) for input_dict in input_list]
     for output_dict, model_output in zip(output_list, model_outputs):
         output_dict[output_key] = model_output
@@ -13,8 +13,8 @@ def append_model_outputs_dictlist(
 
 
 def append_one_to_many_model_outputs_dictlist(
-    input_list: list[dict], model_outputs: list[list[Optional[str]]], output_key: str
-):
+    input_list: List[dict], model_outputs: List[List[Optional[str]]], output_key: str
+) -> List[dict]:
     output_list = []
     for input_dict, model_output in zip(input_list, model_outputs):
         if len(model_output) > 0:
@@ -30,10 +30,10 @@ def append_one_to_many_model_outputs_dictlist(
 
 
 def append_one_to_many_objlist_outputs_dictlist(
-    input_list: list[dict],
-    objlist_outputs: list[list[dict]],
-    output_key_names: list[str],
-):
+    input_list: List[dict],
+    objlist_outputs: List[List[dict]],
+    output_key_names: List[str],
+) -> List[dict]:
     output_list = []
     for input_dict, objlist_output in zip(input_list, objlist_outputs):
         if len(objlist_output) > 0:
@@ -51,8 +51,8 @@ def append_one_to_many_objlist_outputs_dictlist(
 
 
 def auto_explode_json_dictlist(
-    data_dictlist: list[dict], key: str, delete_source_data: bool = True
-) -> list[dict]:
+    data_dictlist: List[dict], key: str, delete_source_data: bool = True
+) -> List[dict]:
     """
     If the value of a key is a list, explode the list into multiple rows
     """

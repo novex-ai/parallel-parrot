@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import RetryClient, JitterRetry
@@ -26,9 +26,9 @@ OPENAI_EMPTY_USAGE_STATS = {
 async def single_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    functions: Optional[list[dict]] = None,
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> tuple[Union[None, str, list], dict, dict]:
+) -> Tuple[Union[None, str, list], dict, dict]:
     async with create_chat_completion_client_session(
         config, use_retries=False
     ) as client_session:
@@ -45,11 +45,11 @@ async def single_openai_chat_completion(
 
 async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    prompts: list[str],
-    functions: Optional[list[dict]] = None,
+    prompts: List[str],
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
     ratelimit_limit_requests: Optional[str] = None,
-) -> tuple[list, list[dict]]:
+) -> Tuple[list, List[dict]]:
     if ratelimit_limit_requests:
         # use half of the available capacity at a time, up until the fileshandle system limit
         # https://platform.openai.com/docs/guides/rate-limits/overview
@@ -124,7 +124,7 @@ async def do_chat_completion_with_semaphore(
     semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    functions: Optional[list[dict]] = None,
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Optional[dict]:
     if not prompt:
@@ -186,9 +186,9 @@ async def do_chat_completion_simple(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    functions: Optional[list[dict]] = None,
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> tuple[dict, dict]:
+) -> Tuple[dict, dict]:
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
@@ -210,7 +210,7 @@ async def do_chat_completion_simple(
 
 def parse_chat_completion_message_and_usage(
     response_result: dict,
-) -> tuple[Union[None, str, list], dict]:
+) -> Tuple[Union[None, str, list], dict]:
     """
     https://platform.openai.com/docs/api-reference/chat/object
     """
@@ -293,7 +293,7 @@ def parse_chat_completion_message_and_usage(
 def create_chat_completion_request_payload(
     config: OpenAIChatCompletionConfig,
     prompt: str,
-    functions: Optional[list[dict]] = None,
+    functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> dict:
     """
