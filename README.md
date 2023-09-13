@@ -20,12 +20,12 @@ Main Features:
 - Output formatted data for fine-tuning
 
 Other Features:
-- Fast asynchronous (concurrent) requests using aiohttp and uvloop, with support for notebook environments
-- Python logging support
+- Fast asynchronous (parallel) requests using aiohttp and uvloop, with support for notebook environments that have an existing event loop
+- Python logging support (e.g. `logging.basicConfig(level=logging.DEBUG)`)
 - Automatic retries, with exponential backoff, jitter, and dynamic header-based delays
-- Uses standard Python [string.Template](https://docs.python.org/3/library/string.html#string.Template) strings for prompt templates.  e.g. `"summarize: ${input}"`
+- Flexible prompt templates using standard Python [string.Template](https://docs.python.org/3/library/string.html#string.Template).  e.g. `"summarize: ${input}"`
 - "Batteries included" with pre-engineered prompt templates
-- Tracks and returns token usage statistics, to support cost controls
+- Programmatic tracking of token usage to support cost control measures.
 - Supports `pandas` 1.x and 2.x APIs
 
 
@@ -89,13 +89,17 @@ sentiment:""",
 )
 
 if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
-    pp.register_uvloop()
+    pp.register_uvloop()  # optional line.  Optimizes asyncio performance using libuv
     (output, usage_stats) = await async_coro
 else:
     (output, usage_stats) = pp.sync_run(async_coro)
 
 print(json.dumps(output, indent=2))
 ```
+
+_Note: The extra logic around the execution of `async_coro` is done to make this code execute regardless of the execution environment.
+If in a recent IPython interpreter (e.g. Jupyter notebook), then this uses `await pp.parallel_text_generation(...)`.  If in a synchronous script
+then this uses a helper function: `pp.sync_run(pp.parallel_text_generation(...))` to run an async function synchronously._
 
 example output:
 ```json
@@ -113,25 +117,24 @@ example output:
 ]
 ```
 
-Note:
 - If the LLM generates multiple outputs (n > 1 for OpenAI), outputs are deduped, then exploded.  Outputs may then contain more rows than the input.
-- If no output is generated, then None or math.nan is returned.
+- If no output is generated, then `None` (for lists of dictionaries) or `math.nan` (for pandas) is returned.
 - See the [prompt_templates](https://github.com/novex-ai/parallel-parrot/blob/v0.3.2/parallel_parrot/prompt_templates.py) for some pre-engineered templates.
 
 ## Generate Data - pp.parallel_data_generation()
 
 Some use-cases are more demanding than the above, and require more complicated outputs.
-This function supports concurrent/parallel exeuction of prompts which expect to generate lists of dictionaries.
+This function supports prompts which expect to generate lists of dictionaries.
 
 Some examples of these use cases include:
 - Generating multiple question/answer pairs from each input document
 - Generating multiple title/summary pairs from each input document
 
 It does so by:
-- Taking in a dataframe or list of dictionaries
+- Taking in a pandas dataframe or list of dictionaries
 - Applying the python prompt template to each row.  Column names are used as the variable names in the template.
-- Generating a modified prompt / API call to specify that we want a list of objects,
-  with each object containing values for each of the output_key_names.
+- Generating an API call specifying that we want a list of objects,
+  with each object containing values for each of the output_key_names. (OpenAI "functions")
 - Calling the LLM API with the prompt for each row
 - Parsing the returned JSON data into a list of dictionaries
 - Mapping each returned dictionary to a row in the output dataframe or list of dictionaries.  This will result in "exploded" output, where
@@ -144,12 +147,12 @@ import parallel_parrot as pp
 
 input_data = [
     {
-        "input": """
+        "text": """
 George Washington (February 22, 1732 - December 14, 1799) was an American military officer, statesman, and Founding Father who served as the first president of the United States from 1789 to 1797. Appointed by the Second Continental Congress as commander of the Continental Army in June 1775, Washington led Patriot forces to victory in the American Revolutionary War and then served as president of the Constitutional Convention in 1787, which drafted and ratified the Constitution of the United States and established the American federal government. Washington has thus been called the "Father of his Country".
         """
     },
     {
-        "input": """
+        "text": """
 John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney, diplomat, writer, and Founding Father who served as the second president of the United States from 1797 to 1801. Before his presidency, he was a leader of the American Revolution that achieved independence from Great Britain. During the latter part of the Revolutionary War and in the early years of the new nation, he served the U.S. government as a senior diplomat in Europe. Adams was the first person to hold the office of vice president of the United States, serving from 1789 to 1797. He was a dedicated diarist and regularly corresponded with important contemporaries, including his wife and adviser Abigail Adams and his friend and political rival Thomas Jefferson.
         """
     },
@@ -162,7 +165,7 @@ async_coro = pp.parallel_data_generation(
 Generate question and answer pairs from the following document.
 Output a list of JSON objects with keys "question" and "answer".
 Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
-document: ${input}
+document: ${text}
     """,
     output_key_names=["question", "answer"]
 )
@@ -179,28 +182,28 @@ example output:
 ```json
 [
   {
-    "input": "...",
+    "text": "...",
     "question": "Who was the first president of the United States?",
     "answer": "George Washington"
   },
   {
-    "input": "...",
+    "text": "...",
     "question": "What position did George Washington hold during the American Revolutionary War?",
     "answer": "Commander of the Continental Army"
   },
   {
-    "input": "...",
+    "text": "...",
     "question": "What document did George Washington help draft and ratify?",
     "answer": "The Constitution of the United States"
   },
-  // more examples omitted
+  // ...
   {
-    "input": "...",
+    "text": "...",
     "question": "Who were some important contemporaries that John Adams corresponded with?",
     "answer": "Adams regularly corresponded with important contemporaries, including his wife and adviser Abigail Adams and his friend and political rival Thomas Jefferson."
   },
   {
-    "input": "...",
+    "text": "...",
     "question": "Who was John Adams?",
     "answer": "John Adams was an American statesman, attorney, diplomat, writer, and Founding Father."
   },
@@ -209,10 +212,10 @@ example output:
 
 Notice that multiple output rows are created for each input, based on what the LLM returns.  All input columns/keys are retained, to permit integration (joining) with other code.
 
-If more than one continuation/response is requested per prompt (e.g. `n` > 1 for OpenAI), then these
-are also seamlessly combined in the outputs.
+If more than one LLM continuation/response is generated per prompt (e.g. `n` > 1 for OpenAI), then these
+outputs are put into additional rows.
 
-If no output is generated (an empty list, or an empty string, or malformed JSON), then None (for lists of dictionaries) or math.nan (for pandas dataframes) is returned for each key in `output_key_names`.
+If no output is generated (an empty list, or an empty string, or malformed JSON), then `None` (for lists of dictionaries) or `math.nan` (for pandas dataframes) is returned for each key in `output_key_names`.
 
 ## Prepare Fine-Tuning Data for OpenAI - pp.write_openai_fine_tuning_jsonl()
 
