@@ -320,9 +320,6 @@ multidict==6.0.4 ; python_version >= "3.8" and python_version < "4.0" \
     --hash=sha256:f70b98cd94886b49d91170ef23ec5c0e8ebb6f242d734ed7ed677b24d50c82cf \
     --hash=sha256:fc35cb4676846ef752816d5be2193a1e8367b4c1397b74a565a9d0389c433a1d \
     --hash=sha256:ff959bee35038c4624250473988b24f846cbeb2c6639de3602c073f10410ceba
-nest-asyncio==1.5.7 ; python_version >= "3.8" and python_version < "4.0" \
-    --hash=sha256:5301c82941b550b3123a1ea772ba9a1c80bad3a182be8c1a5ae6ad3be57a9657 \
-    --hash=sha256:6a80f7b98f24d9083ed24608977c09dd608d83f91cccc24c9d2cba6d10e01c10
 regex==2023.8.8 ; python_version >= "3.8" and python_version < "4.0" \
     --hash=sha256:0085da0f6c6393428bf0d9c08d8b1874d805bb55e17cb1dfa5ddb7cfb11140bf \
     --hash=sha256:06c57e14ac723b04458df5956cfb7e2d9caa6e9d353c0b4c7d5d54fcb1325c46 \

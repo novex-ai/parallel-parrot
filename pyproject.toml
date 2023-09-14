@@ -21,7 +21,6 @@ pandas = { version = "*", optional = true }
 tiktoken = "^0.4.0"
 uvloop = { version = "^0.17.0", markers = "sys_platform == 'linux' or sys_platform == 'darwin'" }
 dataclass-utils = "^0.7.23"
-nest-asyncio = ">=1.4.0"
 
 [tool.poetry.group.dev.dependencies]
 aioresponses = { git = "https://github.com/pnuckowski/aioresponses.git", rev = "b444d724fd1d5b5db0a706960381bcffe2e44f7d" }
