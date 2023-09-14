@@ -66,6 +66,12 @@ import json
 import parallel_parrot as pp
 
 
+config = pp.OpenAIChatCompletionConfig(
+    openai_api_key="*your API key*",
+    system_message="you are a very precise assistant",
+)
+
+
 input_data = [
     {
         "input": "this is a super duper product that will change the world",
@@ -141,6 +147,11 @@ Example of `pp.parallel_data_generation()`:
 ```python
 import json
 import parallel_parrot as pp
+
+config = pp.OpenAIChatCompletionConfig(
+    openai_api_key="*your API key*",
+    n=3,  # tip: to generate many creative outputs, it often makes sense to use n > 1
+)
 
 input_data = [
     {
