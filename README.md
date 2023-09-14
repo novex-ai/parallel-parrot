@@ -171,7 +171,8 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
         prompt_template="""
 Generate question and answer pairs from the following document.
 Output a list of JSON objects with keys "question" and "answer".
-Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
+Only output questions and answers clearly described in the document.
+If there are no questions and answers, output an empty list.
 document: ${text}
         """,
         output_key_names=["question", "answer"]
