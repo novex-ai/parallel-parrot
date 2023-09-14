@@ -69,3 +69,8 @@ def is_pandas_dataframe(df):
     if not pandas_installed:
         return False
     return isinstance(df, pd.DataFrame)
+
+
+def pandas_row_reader(df: "pd.DataFrame"):
+    for i in range(len(df)):
+        yield df.iloc[i]

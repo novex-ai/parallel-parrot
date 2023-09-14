@@ -11,7 +11,7 @@ import tiktoken
 from typing import List, Optional, Union
 
 from .util import logger
-from .util_pandas import is_pandas_dataframe
+from .util_pandas import is_pandas_dataframe, pandas_row_reader
 
 
 # https://platform.openai.com/docs/guides/fine-tuning/token-limits
@@ -91,7 +91,7 @@ def openai_fine_tuning_jsonl_generator(
     model: str,
 ):
     if is_pandas_dataframe(input_data):
-        reader = _pandas_reader(input_data)
+        reader = pandas_row_reader(input_data)
     elif isinstance(input_data, list):
         reader = _dictlist_reader(input_data)
     else:
@@ -138,11 +138,6 @@ def openai_fine_tuning_jsonl_generator(
 def _dictlist_reader(input_dictlist: List[dict]):
     for input_dict in input_dictlist:
         yield input_dict
-
-
-def _pandas_reader(input_df: "pd.DataFrame"):
-    for i in range(len(input_df)):
-        yield input_df.iloc[i]
 
 
 def _make_jsonl_path(output_file_prefix_path: Path, file_index: int) -> Path:
