@@ -4,7 +4,7 @@ from .core import (
     parallel_text_generation,
     parallel_data_generation,
 )
-from .openai_output import write_openai_fine_tuning_jsonl
+from .format_openai_fine_tuning import write_openai_fine_tuning_jsonl
 from .util_dictlist import auto_explode_json_dictlist
 
 __all__ = [
