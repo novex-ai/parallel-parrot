@@ -100,10 +100,6 @@ print(json.dumps(output, indent=2))
 print(json.dumps(usage_stats, indent=2))
 ```
 
-_Note: The extra logic around the execution of `async_coro` is done to make this code execute regardless of the execution environment.
-If in a recent IPython interpreter (e.g. Jupyter notebook), then this uses `await pp.parallel_text_generation(...)`.  If in a synchronous script
-then this uses a helper function: `pp.sync_run(pp.parallel_text_generation(...))` to run an async function synchronously._
-
 example output:
 ```json
 [
