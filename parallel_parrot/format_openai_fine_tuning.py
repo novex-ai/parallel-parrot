@@ -1,9 +1,17 @@
+try:
+    import pandas as pd  # type: ignore
+except ImportError:
+    pandas_installed = False
+else:
+    pandas_installed = True
+
 import json
 from pathlib import Path
 import tiktoken
 from typing import List, Optional, Union
 
 from .util import logger
+from .util_pandas import is_pandas_dataframe
 
 
 # https://platform.openai.com/docs/guides/fine-tuning/token-limits
@@ -11,15 +19,25 @@ FINE_TUNING_MAX_TOKENS = 4096
 
 
 def write_openai_fine_tuning_jsonl(
-    input_dictlist: List[dict],
+    input_data: Union[List[dict], "pd.DataFrame"],
     prompt_key: str,
     completion_key: str,
     system_message: Optional[str],
     model: str,
     output_file_prefix: Union[str, Path],
 ) -> List[str]:
+    """
+    Take a list of dictionaries or a pandas dataframe and generate JSONL data which
+    can be used for instruction fine-tuning an OpenAI model.
+    - input_data: a list of dictionaries or a pandas dataframe
+    - prompt_key: the key in the dictionary or dataframe which contains the prompt
+    - completion_key: the key in the dictionary or dataframe which contains the completion
+    - system_message: an optional message to be sent to the assistant before the prompt
+    - model: the model to use for token counting
+    - output_file_prefix: the prefix for the output file(s) to write to, e.g. "/tmp/fine_tuning"
+    """
     jsonl_generator = openai_fine_tuning_jsonl_generator(
-        input_dictlist=input_dictlist,
+        input_data=input_data,
         prompt_key=prompt_key,
         completion_key=completion_key,
         system_message=system_message,
@@ -66,17 +84,23 @@ def write_openai_fine_tuning_jsonl(
 
 
 def openai_fine_tuning_jsonl_generator(
-    input_dictlist: List[dict],
+    input_data: Union[List[dict], "pd.DataFrame"],
     prompt_key: str,
     completion_key: str,
     system_message: Optional[str],
     model: str,
 ):
+    if is_pandas_dataframe(input_data):
+        reader = _pandas_reader(input_data)
+    elif isinstance(input_data, list):
+        reader = _dictlist_reader(input_data)
+    else:
+        raise Exception(f"Invalid {type(input_data)=}")
     # use the token configuration for models that can be fine-tuned
     # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     tokens_per_message = 3
     encoding = tiktoken.encoding_for_model(model)
-    for input_dict in input_dictlist:
+    for input_dict in reader:
         prompt = input_dict[prompt_key]
         completion = input_dict[completion_key]
         num_tokens = tokens_per_message
@@ -109,6 +133,16 @@ def openai_fine_tuning_jsonl_generator(
         }
         line = json.dumps(data, separators=(",", ":")) + "\n"
         yield (line, num_tokens)
+
+
+def _dictlist_reader(input_dictlist: List[dict]):
+    for input_dict in input_dictlist:
+        yield input_dict
+
+
+def _pandas_reader(input_df: "pd.DataFrame"):
+    for i in range(len(input_df)):
+        yield input_df.iloc[i]
 
 
 def _make_jsonl_path(output_file_prefix_path: Path, file_index: int) -> Path:

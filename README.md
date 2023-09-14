@@ -226,7 +226,7 @@ split your data at appropriate token counts in jsonl format, the `parrallel-parr
 import json
 import parallel_parrot as pp
 
-input_dictlist = [
+input_data = [
   {
     "question": "Who was the first president of the United States?",
     "answer": "George Washington"
@@ -242,7 +242,7 @@ input_dictlist = [
 ]
 
 paths = pp.write_openai_fine_tuning_jsonl(
-    input_dictlist=input_dictlist,
+    input_data=input_data,
     prompt_key="question",
     completion_key="answer",
     system_message="",

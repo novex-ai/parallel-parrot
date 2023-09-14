@@ -8,7 +8,7 @@ from parallel_parrot import sync_run
 logging.basicConfig(level=logging.DEBUG)
 
 
-input_dictlist = [
+input_data = [
     {
         "input": "Power your business with Retina\nGet fast, reliable Customer Lifetime Value (CLV)\nEvery deliverable related to 90%+ accurate CLV (scores, analytics, backtest & data explorer) is delivered within hours vs. months or years and at a fraction of the cost.",
         "question": "What can Retina help businesses with?",
@@ -104,7 +104,7 @@ input_dictlist = [
 
 async def main():
     paths = pp.write_openai_fine_tuning_jsonl(
-        input_dictlist=input_dictlist,
+        input_data=input_data,
         prompt_key="question",
         completion_key="answer",
         system_message="",
