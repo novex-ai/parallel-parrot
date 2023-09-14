@@ -114,4 +114,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    sync_run(main())
+    pp.run_async(main())
