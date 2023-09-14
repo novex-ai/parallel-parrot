@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "parallel-parrot"
-version = "0.5.0"
+version = "0.5.1"
 description = "A library for easily and quickly using LLMs on tabular data"
 authors = ["Brad Ito <phlogisticfugu@gmail.com>"]
 license = "MIT"
