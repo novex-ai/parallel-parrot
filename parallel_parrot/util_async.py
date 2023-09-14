@@ -39,6 +39,10 @@ def run_async(coro: Coroutine) -> Any:
 
 
 class _AsyncRunnerThread(threading.Thread):
+    """
+    from https://stackoverflow.com/a/75094151/22484883
+    """
+
     def __init__(self, coro):
         self.coro = coro
         self.result = None
