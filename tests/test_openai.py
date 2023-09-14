@@ -85,7 +85,7 @@ def test_parallel_openai_chat_completion_dictlist(
             "usage": {"prompt_tokens": 37, "completion_tokens": 1, "total_tokens": 38},
         },
     )
-    (output_list, usage_stats_sum) = pp.sync_run(
+    (output_list, usage_stats_sum) = pp.run_async(
         parallel_openai_chat_completion_dictlist(
             config=config,
             input_list=[
@@ -161,7 +161,7 @@ def test_parallel_openai_chat_completion_pandas(
         },
         index=[100, 101],
     )
-    (output_df, usage_stats_sum) = pp.sync_run(
+    (output_df, usage_stats_sum) = pp.run_async(
         parallel_openai_chat_completion_pandas(
             config=openai_chat_completion_config,
             input_df=input_df,
@@ -271,7 +271,7 @@ def test_parallel_openai_chat_completion_exploding_function_dictlist(
             },
         },
     )
-    (output_list, usage_stats_sum) = pp.sync_run(
+    (output_list, usage_stats_sum) = pp.run_async(
         parallel_openai_chat_completion_exploding_function_dictlist(
             config=config,
             input_list=[
@@ -398,7 +398,7 @@ def test_parallel_openai_chat_completion_exploding_function_pandas(
             },
         },
     )
-    (output_df, usage_stats_sum) = pp.sync_run(
+    (output_df, usage_stats_sum) = pp.run_async(
         parallel_openai_chat_completion_exploding_function_pandas(
             config=config,
             input_df=pd.DataFrame(

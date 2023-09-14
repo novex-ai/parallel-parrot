@@ -77,24 +77,21 @@ input_data = [
     }
 ]
 
-async_coro = pp.parallel_text_generation(
-    config=config,
-    input_data=input_data,
-    prompt_template="""
+(output, usage_stats) = pp.run_async(
+    pp.parallel_text_generation(
+        config=config,
+        input_data=input_data,
+        prompt_template="""
 What is the sentiment of this product review?
 POSITIVE, NEUTRAL or NEGATIVE?
 product review: ${input}
 sentiment:""",
-    output_key="sentiment",
+        output_key="sentiment",
+    )
 )
 
-if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
-    pp.register_uvloop()  # optional line.  Optimizes asyncio performance using libuv
-    (output, usage_stats) = await async_coro
-else:
-    (output, usage_stats) = pp.sync_run(async_coro)
-
 print(json.dumps(output, indent=2))
+print(json.dumps(usage_stats, indent=2))
 ```
 
 _Note: The extra logic around the execution of `async_coro` is done to make this code execute regardless of the execution environment.
@@ -158,24 +155,22 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
     },
 ]
 
-async_coro = pp.parallel_data_generation(
-    config=config,
-    input_data=input_data,
-    prompt_template="""
+(output, usage_stats) = pp.run_async(
+    pp.parallel_data_generation(
+        config=config,
+        input_data=input_data,
+        prompt_template="""
 Generate question and answer pairs from the following document.
 Output a list of JSON objects with keys "question" and "answer".
 Only output questions and answers clearly described in the document.  If there are no questions and answers, output an empty list.
 document: ${text}
-    """,
-    output_key_names=["question", "answer"]
+        """,
+        output_key_names=["question", "answer"]
+    )
 )
 
-if pp.is_inside_event_loop():  # check if running in a notebook with autoawait "magic"
-    pp.register_uvloop()
-    (output, usage_stats) = await async_coro
-else:
-    (output, usage_stats) = pp.sync_run(async_coro)
 print(json.dumps(output, indent=2))
+print(json.dumps(usage_stats, indent=2))
 ```
 
 example output:

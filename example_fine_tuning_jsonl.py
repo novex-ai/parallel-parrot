@@ -2,7 +2,6 @@ import json
 import logging
 
 import parallel_parrot as pp
-from parallel_parrot import sync_run
 
 
 logging.basicConfig(level=logging.DEBUG)

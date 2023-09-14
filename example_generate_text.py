@@ -26,7 +26,7 @@ if __name__ == "__main__":
         },
         index=[100, 101],
     )
-    (output_df, usage_stats_sum) = pp.sync_run(
+    (output_df, usage_stats_sum) = pp.run_async(
         pp.parallel_text_generation(
             config=config,
             input_data=input_df,

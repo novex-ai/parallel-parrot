@@ -1,4 +1,4 @@
-from .util_async import is_inside_event_loop, register_uvloop, sync_run
+from .util_async import run_async
 from .types import OpenAIChatCompletionConfig
 from .core import (
     parallel_text_generation,
@@ -10,7 +10,7 @@ from .util_dictlist import auto_explode_json_dictlist
 __all__ = [
     "is_inside_event_loop",
     "register_uvloop",
-    "sync_run",
+    "run_async",
     "OpenAIChatCompletionConfig",
     "parallel_text_generation",
     "parallel_data_generation",

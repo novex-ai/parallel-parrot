@@ -3,7 +3,7 @@ import os
 import logging
 
 import parallel_parrot as pp
-from parallel_parrot import sync_run
+from parallel_parrot import run_async
 from parallel_parrot.prompt_templates import (
     JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT,
     JSON_QUESTION_AND_ANSWER_FROM_DOCUMENT_KEY_NAMES,
@@ -40,4 +40,4 @@ John Adams (October 30, 1735 - July 4, 1826) was an American statesman, attorney
 
 
 if __name__ == "__main__":
-    sync_run(main())
+    run_async(main())

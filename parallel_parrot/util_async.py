@@ -1,7 +1,5 @@
 import asyncio
 from typing import Coroutine, Any
-import sys
-import warnings
 
 try:
     import uvloop  # type: ignore
@@ -10,60 +8,42 @@ except ImportError:
 else:
     uvloop_installed = True
 
+import nest_asyncio  # type: ignore
 
 from .util import logger
 
 
-def is_inside_event_loop() -> bool:
-    """
-    Test if we are within an event loop, as with ipython autoawait.
-    This means that we should use await directly.
-    https://ipython.readthedocs.io/en/stable/interactive/autoawait.html
-    """
-    warnings.filterwarnings(
-        "ignore",
-        message="coroutine 'sleep' was never awaited",
-        module="parallel_parrot",
-    )
-    try:
-        asyncio.run(asyncio.sleep(0))
-        return False
-    except RuntimeError:
-        return True
-
-
-def register_uvloop() -> None:
-    """
-    Register uvloop as the asyncio event loop.
-    uvloop is a faster implementation of the asyncio event loop.
-    """
-    if uvloop_installed:
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        logger.info("changed the asyncio event loop policy to uvloop")
-    else:
-        logger.warn("tried to register uvloop but it is not installed")
-
-
-def sync_run(runnable: Coroutine) -> Any:
+def run_async(coro: Coroutine) -> Any:
     """
     Run an async coroutine synchronously.
+    Try to use uvloop for faster i/o if possible
+    Fall back to monkey-patching the current event loop if necessary
     """
-    if is_inside_event_loop():
-        raise Exception(
-            "Do not use sync_run() and instead just use await."
-            " This is because IPython autoawait is enabled."
-            " see https://ipython.readthedocs.io/en/stable/interactive/autoawait.html"
-        )
-    if not uvloop_installed:
-        # fall back to asyncio.run if uvloop is not supported, as on windows
-        return asyncio.run(runnable)
-    if sys.version_info >= (3, 11):
-        with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
-            return runner.run(runnable)
+    if uvloop_installed and _safe_get_running_loop() is None:
+        pre_existing_policy = asyncio.get_event_loop_policy()
+        logger.debug("using uvloop for faster asyncio")
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     else:
-        loop = uvloop.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(runnable)
-        finally:
-            loop.close()
+        pre_existing_policy = None
+    try:
+        return asyncio.run(coro)
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" in str(e):
+            logger.warn(
+                "monkey-patching the currently running event loop using nest_asyncio."
+            )
+            nest_asyncio.apply()
+            return asyncio.run(coro)
+        else:
+            raise
+    finally:
+        if pre_existing_policy:
+            # clean up after ourselves, to avoid creating problems in code executed after this
+            asyncio.set_event_loop_policy(pre_existing_policy)
+
+
+def _safe_get_running_loop():
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return None
