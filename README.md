@@ -269,3 +269,7 @@ example output paths:
 /tmp/parallel_parrot/test_fine_tuning.00001.jsonl
 /tmp/parallel_parrot/test_fine_tuning.00002.jsonl
 ```
+
+---
+
+_Note on the name of the package: It's an alliterative animal name that combines the main functionality: parallelism, with the animal that can sort-of talk: parrots (like LLMs)_
