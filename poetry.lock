@@ -166,6 +166,20 @@ files = [
 ]
 
 [[package]]
+name = "asyncio-anywhere"
+version = "0.1.2"
+description = "Python package that makes it easy to run fast asyncio code"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "asyncio_anywhere-0.1.2-py3-none-any.whl", hash = "sha256:5c00f4c40d691d76b1b731ed4480eee284a105f64da94fbf7d33793c18eb6625"},
+    {file = "asyncio_anywhere-0.1.2.tar.gz", hash = "sha256:5be5305bd51bb958dd2c0162773e6813190b5b95a8b5006cfdc7450b02bd2cfd"},
+]
+
+[package.dependencies]
+uvloop = {version = ">=0.17.0,<0.18.0", markers = "sys_platform == \"linux\" or sys_platform == \"darwin\""}
+
+[[package]]
 name = "attrs"
 version = "23.1.0"
 description = "Classes Without Boilerplate"
@@ -1210,4 +1224,4 @@ pandas = ["pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "0d58c639dc23c3a562bf38a34734289b3d0a021b1f9a011ca74e1cefde90f807"
+content-hash = "67f1c6421a3bec02a35a36cd26e3fad64a6334dc97f5c5a5d003dd36972d9a04"
