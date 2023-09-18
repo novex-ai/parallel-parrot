@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import List, Optional, Tuple, Union
+import litellm
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import RetryClient, JitterRetry
@@ -196,16 +197,9 @@ async def do_chat_completion_simple(
         function_call=function_call,
     )
     logger.info(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
-    async with client_session.post(
-        OPENAI_CHAT_COMPLETIONS_URL, json=payload
-    ) as response:
-        logger.info(
-            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
-        )
-        response.raise_for_status()
-        response_result = await response.json()
-        logger.info(f"Response {response_result=} from {payload=}")
-        return (response_result, dict(response.headers))
+    response_result = await litellm.acompletion(**payload)
+    logger.info(f"Response {response_result=} from {payload=}")
+    return (response_result, response_result)
 
 
 def parse_chat_completion_message_and_usage(
