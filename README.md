@@ -7,6 +7,11 @@ A Python library for easily and quickly using LLMs on tabular data.  Because syn
 [![pytest](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/novex-ai/parallel-parrot/actions/workflows/pytest.yml)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
+![flock of parrots](https://res.cloudinary.com/dn7sohze7/image/upload/v1695421900/parallel-parrot/0002-gareth-davies-EGcfyDiUv58-unsplash.jpg)
+
+*Photo by [Gareth Davies](https://unsplash.com/@gdfoto?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
+ on [Unsplash](https://unsplash.com/photos/EGcfyDiUv58?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)* 
+
 Use cases:
 - Generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
 - Sentiment analysis or summarization on a large number of documents
