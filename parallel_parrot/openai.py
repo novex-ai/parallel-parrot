@@ -7,7 +7,10 @@ else:
 
 from typing import List, Optional, Union
 
-from .openai_api import single_openai_chat_completion, parallel_openai_chat_completion
+from .openai_api import (
+    single_setup_openai_chat_completion,
+    parallel_openai_chat_completion,
+)
 from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompletionConfig
 from .util import (
     logger,
@@ -165,7 +168,11 @@ async def _parrot_openai_chat_completion(
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:
     # process a single row first, both to check for errors and to get the ratelimit_limit_requests
-    (model_output, usage_stats, response_headers) = await single_openai_chat_completion(
+    (
+        model_output,
+        usage_stats,
+        response_headers,
+    ) = await single_setup_openai_chat_completion(
         config=config,
         prompt=prompts[0],
         functions=functions,

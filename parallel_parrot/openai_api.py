@@ -3,7 +3,7 @@ import json
 from typing import List, Optional, Tuple, Union
 
 from aiohttp import ClientSession, ClientTimeout
-from aiohttp_retry import RetryClient, JitterRetry
+from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
 from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
 from .util import logger
@@ -23,16 +23,16 @@ OPENAI_EMPTY_USAGE_STATS = {
 }
 
 
-async def single_openai_chat_completion(
+async def single_setup_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     prompt: str,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Tuple[Union[None, str, list], dict, dict]:
     async with create_chat_completion_client_session(
-        config, use_retries=False
+        config, is_setup_request=True
     ) as client_session:
-        (response_result, response_headers) = await do_chat_completion_simple(
+        (response_result, response_headers) = await _do_chat_completion_simple(
             client_session=client_session,
             config=config,
             prompt=prompt,
@@ -59,7 +59,7 @@ async def parallel_openai_chat_completion(
     else:
         num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
     async with create_chat_completion_client_session(
-        config, use_retries=True
+        config, is_setup_request=False
     ) as client_session:
         semaphore = asyncio.Semaphore(num_concurrent_requests)
         tasks = [
@@ -88,7 +88,7 @@ async def parallel_openai_chat_completion(
 
 def create_chat_completion_client_session(
     config: OpenAIChatCompletionConfig,
-    use_retries: bool,
+    is_setup_request: bool,
 ) -> ClientSessionType:
     headers = create_openai_http_headers(config)
     client_timeout = ClientTimeout(total=OPENAI_REQUEST_TIMEOUT_SECONDS)
@@ -96,23 +96,32 @@ def create_chat_completion_client_session(
         headers=headers,
         timeout=client_timeout,
     )
-    if not use_retries:
-        return client_session
     # Retry error codes which do not indicate a problem with the request itself. Using jitter to avoid thundering herd.
     # The 409 code (openai.error.TryAgain) is returned when the model needs to warm up.
     # https://github.com/openai/openai-python/blob/1be14ee34a0f8e42d3f9aa5451aa4cb161f1781f/openai/api_requestor.py#L401
     # https://github.com/inyutin/aiohttp_retry/blob/master/aiohttp_retry/retry_options.py#L158
     # https://platform.openai.com/docs/guides/error-codes/api-errors
-    retry_options = JitterRetry(
-        attempts=OPENAI_TOTAL_RETRIES,
-        start_timeout=1,
-        max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
-        factor=2.0,
-        statuses={409, 500, 503},
-        exceptions={asyncio.TimeoutError},
-        random_interval_size=1.5,
-        retry_all_server_errors=True,
-    )
+    if is_setup_request:
+        retry_options = ExponentialRetry(
+            attempts=OPENAI_TOTAL_RETRIES,
+            start_timeout=0.25,
+            max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
+            factor=1.5,
+            statuses={409, 500, 503},
+            exceptions={asyncio.TimeoutError},
+            retry_all_server_errors=False,
+        )
+    else:
+        retry_options = JitterRetry(
+            attempts=OPENAI_TOTAL_RETRIES,
+            start_timeout=1,
+            max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
+            factor=2.0,
+            statuses={409, 500, 503},
+            exceptions={asyncio.TimeoutError},
+            random_interval_size=1.5,
+            retry_all_server_errors=False,
+        )
     retry_client_session = RetryClient(
         client_session=client_session, retry_options=retry_options
     )
@@ -182,7 +191,7 @@ async def _chat_completion_with_ratelimit(
         return response_result
 
 
-async def do_chat_completion_simple(
+async def _do_chat_completion_simple(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
     prompt: str,
