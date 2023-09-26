@@ -9,7 +9,7 @@ from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionC
 from .util import logger
 
 
-OPENAI_REQUEST_TIMEOUT_SECONDS = 30.0
+OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
@@ -176,9 +176,9 @@ async def _chat_completion_with_ratelimit(
                 payload=payload,
                 num_ratelimit_retries=(num_ratelimit_retries + 1),
             )
-        response.raise_for_status()
         response_result = await response.json()
         logger.debug(f"Response {response_result=} from {payload=}")
+        response.raise_for_status()
         return response_result
 
 
@@ -202,9 +202,9 @@ async def do_chat_completion_simple(
         logger.info(
             f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
         )
-        response.raise_for_status()
         response_result = await response.json()
         logger.info(f"Response {response_result=} from {payload=}")
+        response.raise_for_status()
         return (response_result, dict(response.headers))
 
 
