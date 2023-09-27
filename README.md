@@ -12,6 +12,8 @@ A Python library for easily and quickly using LLMs on tabular data.  Because syn
 *Photo by [Gareth Davies](https://unsplash.com/@gdfoto?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
  on [Unsplash](https://unsplash.com/photos/EGcfyDiUv58?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)* 
 
+See [blog post](https://bradito.me/blog/parallel-parrot/) on why we built this.
+
 Use cases:
 - Generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
 - Sentiment analysis or summarization on a large number of documents
