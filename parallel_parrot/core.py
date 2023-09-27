@@ -6,7 +6,7 @@ except ImportError:
 
 from typing import List, Union
 
-from .openai import (
+from .openai_data_interface import (
     parallel_openai_chat_completion_dictlist,
     parallel_openai_chat_completion_pandas,
     parallel_openai_chat_completion_exploding_function_dictlist,

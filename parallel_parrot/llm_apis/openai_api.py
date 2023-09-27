@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple, Union
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
-from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
-from .util import logger
+from ..types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
+from ..util import logger
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
@@ -32,7 +32,7 @@ async def single_setup_openai_chat_completion(
     async with create_chat_completion_client_session(
         config, is_setup_request=True
     ) as client_session:
-        (response_result, response_headers) = await _do_chat_completion_simple(
+        (response_result, response_headers) = await do_openai_chat_completion(
             client_session=client_session,
             config=config,
             prompt=prompt,
@@ -64,7 +64,7 @@ async def parallel_openai_chat_completion(
         semaphore = asyncio.Semaphore(num_concurrent_requests)
         tasks = [
             asyncio.create_task(
-                do_chat_completion_with_semaphore(
+                do_chat_completion_with_semaphore_and_ratelimit(
                     client_session=client_session,
                     semaphore=semaphore,
                     config=config,
@@ -75,10 +75,10 @@ async def parallel_openai_chat_completion(
             )
             for prompt in prompts
         ]
-        response_results = await asyncio.gather(*tasks)
+        task_results = await asyncio.gather(*tasks)
     result_tuples = [
         parse_chat_completion_message_and_usage(response_result)
-        for response_result in response_results
+        for (response_result, _) in task_results
     ]
     unzipped_results = list(zip(*result_tuples))
     model_outputs = list(unzipped_results[0])
@@ -128,14 +128,14 @@ def create_chat_completion_client_session(
     return retry_client_session
 
 
-async def do_chat_completion_with_semaphore(
+async def do_chat_completion_with_semaphore_and_ratelimit(
     client_session: ClientSessionType,
     semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
     prompt: str,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> Optional[dict]:
+) -> Optional[Tuple[dict, dict]]:
     if not prompt:
         return None
     payload = create_chat_completion_request_payload(
@@ -155,7 +155,7 @@ async def _chat_completion_with_ratelimit(
     client_session: ClientSessionType,
     payload: dict,
     num_ratelimit_retries: int = 0,
-) -> dict:
+) -> Tuple[dict, dict]:
     logger.debug(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
@@ -188,10 +188,10 @@ async def _chat_completion_with_ratelimit(
         response_result = await response.json()
         logger.debug(f"Response {response_result=} from {payload=}")
         response.raise_for_status()
-        return response_result
+        return (response_result, dict(response.headers))
 
 
-async def _do_chat_completion_simple(
+async def do_openai_chat_completion(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
     prompt: str,

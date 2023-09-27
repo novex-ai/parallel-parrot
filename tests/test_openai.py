@@ -4,7 +4,7 @@ from aioresponses import aioresponses
 import pytest
 
 import parallel_parrot as pp
-from parallel_parrot.openai import (
+from parallel_parrot.openai_data_interface import (
     parallel_openai_chat_completion_dictlist,
     parallel_openai_chat_completion_pandas,
     parallel_openai_chat_completion_exploding_function_dictlist,

@@ -7,7 +7,7 @@ else:
 
 from typing import List, Optional, Union
 
-from .openai_api import (
+from .llm_apis.openai_api import (
     single_setup_openai_chat_completion,
     parallel_openai_chat_completion,
 )
