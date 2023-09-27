@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple, Union
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
-from ..types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
-from ..util import logger
+from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
+from .util import logger
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
