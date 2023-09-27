@@ -1,20 +1,13 @@
 from parallel_parrot.util import (
-    input_list_to_prompts,
+    make_curried_prompt_template,
     sum_usage_stats,
 )
 
 
-def test_input_list_to_prompts():
-    input_list = [
-        {"a": "alpha", "b": "beta"},
-        {"a": "ALPHA", "b": "BETA"},
-    ]
+def test_make_curried_prompt_template():
     prompt_template = "${a}--${b}"
-    prompts = input_list_to_prompts(input_list, prompt_template)
-    assert prompts == [
-        "alpha--beta",
-        "ALPHA--BETA",
-    ]
+    curried_prompt_template = make_curried_prompt_template(prompt_template)
+    assert curried_prompt_template({"a": "alpha", "b": "beta"}) == "alpha--beta"
 
 
 def test_sum_usage_stats():

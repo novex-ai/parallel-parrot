@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Callable
 import json
 from typing import List, Optional, Tuple, Union
 
@@ -25,7 +26,8 @@ OPENAI_EMPTY_USAGE_STATS = {
 
 async def single_setup_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    prompt: str,
+    input_dict: dict,
+    curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Tuple[Union[None, str, list], dict, dict]:
@@ -35,7 +37,8 @@ async def single_setup_openai_chat_completion(
         (response_result, response_headers) = await do_openai_chat_completion(
             client_session=client_session,
             config=config,
-            prompt=prompt,
+            input_dict=input_dict,
+            curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,
         )
@@ -45,7 +48,8 @@ async def single_setup_openai_chat_completion(
 
 async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    prompts: List[str],
+    input_dictlist: List[dict],
+    curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
     ratelimit_limit_requests: Optional[str] = None,
@@ -68,12 +72,13 @@ async def parallel_openai_chat_completion(
                     client_session=client_session,
                     semaphore=semaphore,
                     config=config,
-                    prompt=prompt,
+                    input_dict=input_dict,
+                    curried_prompt_template=curried_prompt_template,
                     functions=functions,
                     function_call=function_call,
                 )
             )
-            for prompt in prompts
+            for input_dict in input_dictlist
         ]
         task_results = await asyncio.gather(*tasks)
     result_tuples = [
@@ -132,10 +137,12 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
     client_session: ClientSessionType,
     semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
-    prompt: str,
+    input_dict: dict,
+    curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Optional[Tuple[dict, dict]]:
+    prompt = curried_prompt_template(input_dict)
     if not prompt:
         return None
     payload = create_chat_completion_request_payload(
@@ -194,10 +201,12 @@ async def _chat_completion_with_ratelimit(
 async def do_openai_chat_completion(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
-    prompt: str,
+    input_dict: dict,
+    curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Tuple[dict, dict]:
+    prompt = curried_prompt_template(input_dict)
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,

@@ -14,7 +14,7 @@ from .openai_api import (
 from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompletionConfig
 from .util import (
     logger,
-    input_list_to_prompts,
+    make_curried_prompt_template,
     sum_usage_stats,
 )
 from .util_dictlist import (
@@ -35,10 +35,10 @@ async def parallel_openai_chat_completion_dictlist(
     prompt_template: str,
     output_key: str,
 ) -> ParallelParrotOutput:
-    prompts = input_list_to_prompts(input_list, prompt_template)
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        input_dictlist=input_list,
+        prompt_template=prompt_template,
     )
     if config.n is not None and config.n > 1:
         output_list = append_one_to_many_model_outputs_dictlist(
@@ -69,10 +69,11 @@ async def parallel_openai_chat_completion_pandas(
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
-    prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
+    input_dictlist = input_df.to_dict(orient="records")
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        input_dictlist=input_dictlist,
+        prompt_template=prompt_template,
     )
     if config.n is not None and config.n > 1:
         output_df = append_one_to_many_model_outputs_pandas(
@@ -101,7 +102,6 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     Process a prompt which generates a list of objects.
     Explode those outputs into multiple rows with the object keys as column names
     """
-    prompts = input_list_to_prompts(input_list, prompt_template)
     (functions, function_call) = _prep_function_list_of_objects(
         function_name="f",
         parameter_name="p",
@@ -109,7 +109,8 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     )
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        input_dictlist=input_list,
+        prompt_template=prompt_template,
         functions=functions,
         function_call=function_call,
     )
@@ -136,15 +137,16 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
-    prompts = input_list_to_prompts(input_df.to_dict(orient="records"), prompt_template)
     (functions, function_call) = _prep_function_list_of_objects(
         function_name="f",
         parameter_name="p",
         output_key_names=output_key_names,
     )
+    input_dictlist = input_df.to_dict(orient="records")
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        prompts=prompts,
+        input_dictlist=input_dictlist,
+        prompt_template=prompt_template,
         functions=functions,
         function_call=function_call,
     )
@@ -163,10 +165,12 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
 
 async def _parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    prompts: List[str],
+    input_dictlist: List[dict],
+    prompt_template: str,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:
+    curried_prompt_template = make_curried_prompt_template(prompt_template)
     # process a single row first, both to check for errors and to get the ratelimit_limit_requests
     (
         model_output,
@@ -174,17 +178,19 @@ async def _parrot_openai_chat_completion(
         response_headers,
     ) = await single_setup_openai_chat_completion(
         config=config,
-        prompt=prompts[0],
+        input_dict=input_dictlist[0],
+        curried_prompt_template=curried_prompt_template,
         functions=functions,
         function_call=function_call,
     )
     model_outputs = [model_output]
     usage_stats_list = [usage_stats]
     ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
-    if len(prompts) >= 2:
+    if len(input_dictlist) >= 2:
         (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
             config=config,
-            prompts=prompts[1:],
+            input_dictlist=input_dictlist[1:],
+            curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,
             ratelimit_limit_requests=ratelimit_limit_requests,
