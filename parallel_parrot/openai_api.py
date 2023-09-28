@@ -284,8 +284,7 @@ async def do_openai_chat_completion(
                     error
                 )
                 tokens_to_remove = supplied_tokens - max_tokens
-                logger.log(
-                    log_level,
+                logger.warn(
                     f"truncating prompt {tokens_to_remove=} {error=}",
                 )
                 truncated_prompt = openai_token_truncate(
