@@ -5,7 +5,7 @@ except ImportError:
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 import logging
 import re
@@ -44,7 +44,7 @@ class OpenAIResponseData:
     status: int
     reason: str
     headers: dict
-    body_from_json: dict = field(default_factory=dict)
+    body_from_json: dict
 
 
 async def single_setup_openai_chat_completion(
