@@ -12,7 +12,7 @@ A Python library for easily and quickly using LLMs on tabular data.  Because syn
 *Photo by [Gareth Davies](https://unsplash.com/@gdfoto?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
  on [Unsplash](https://unsplash.com/photos/EGcfyDiUv58?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)* 
 
-See [blog post](https://bradito.me/blog/parallel-parrot/) on why we built this.
+See our [blog post](https://bradito.me/blog/parallel-parrot/) on why we built this.
 
 Use cases:
 - Generate questions from documents for better Retrieval Augmented Generation (match questions to questions, not documents)
@@ -276,6 +276,42 @@ example output paths:
 /tmp/parallel_parrot/test_fine_tuning.00001.jsonl
 /tmp/parallel_parrot/test_fine_tuning.00002.jsonl
 ```
+
+## Advanced Configuration
+
+The OpenAI `config` object has number of optional parameters:
+
+```python
+import parallel_parrot as pp
+
+config = pp.OpenAIChatCompletionConfig(
+    openai_api_key="*your API key*",  # required
+    model="gpt-3.5-turbo",  # required
+    openai_org_id=None,
+    system_message=None,
+    temperature=None,
+    top_p=None,
+    n=None,
+    max_tokens=None,
+    presence_penalty=None,
+    frequency_penalty=None,
+    logit_bias=None,
+    user=None,
+    token_limit_mode=pp.TokenLimitMode.RAISE_ERROR
+)
+
+```
+
+See [https://platform.openai.com/docs/guides/gpt](https://platform.openai.com/docs/guides/gpt) for the `model` values supported by the chat completions API.  Note that [fine tuned](https://platform.openai.com/docs/guides/fine-tuning) models can be used as well.
+
+See [https://platform.openai.com/docs/api-reference/organization-optional](https://platform.openai.com/docs/api-reference/organization-optional) for more about the `openai_org_id` parameter - which is suitable for separating costs.
+
+See [https://platform.openai.com/docs/api-reference/chat/create](https://platform.openai.com/docs/api-reference/chat/create) for definitions of many of the other parameters.  They can be used to adjust the behavior of the LLM.
+
+The `token_limit_mode` can accept one of two values:
+
+- `pp.TokenLimitMode.RAISE_ERROR` (default) raises an error when the token limit of the context window is exceeded
+- `pp.TokenLimitMode.TRUNCATE` - automatically truncates the prompt in response to token limit errors.  These are logged at the `logging.WARNING` log level.
 
 ---
 

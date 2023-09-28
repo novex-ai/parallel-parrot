@@ -67,6 +67,7 @@ class OpenAIChatCompletionConfig(LLMConfig):
     def get_nonpassthrough_names(self) -> List[str]:
         return [
             "openai_api_key",
+            "openai_org_id",
             "system_message",
             "token_limit_mode",
         ] + super().get_nonpassthrough_names()
