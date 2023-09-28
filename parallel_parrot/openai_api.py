@@ -5,7 +5,7 @@ except ImportError:
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 import json
 import logging
 from typing import List, Optional, Tuple, Union
@@ -57,6 +57,8 @@ async def single_setup_openai_chat_completion(
             functions=functions,
             function_call=function_call,
         )
+    if response_data.status != 200:
+        raise ParallelParrotError(f"error in single_setup request: {response_data=}")
     response_result = response_data.body_from_json
     response_headers = response_data.headers
     (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
@@ -167,7 +169,7 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
     function_call: Union[None, dict, str] = None,
 ) -> OpenAIResponseData:
     async with semaphore:
-        return await _chat_completion_with_ratelimit(
+        response_data = await _chat_completion_with_ratelimit(
             client_session=client_session,
             config=config,
             input_row=input_row,
@@ -175,6 +177,9 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
             functions=functions,
             function_call=function_call,
         )
+    if response_data.status != 200:
+        raise ParallelParrotError(f"error in parallel request: {response_data=}")
+    return response_data
 
 
 async def _chat_completion_with_ratelimit(
@@ -252,7 +257,7 @@ async def do_openai_chat_completion(
             headers=dict(response.headers),
             body_from_json=response_result,
         )
-    logger.log(log_level, f"Response {asdict(response_data)=} from {payload=}")
+    logger.log(log_level, f"Response {response_data=} from {payload=}")
     return response_data
 
 
