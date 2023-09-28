@@ -5,7 +5,9 @@ except ImportError:
 
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass, asdict
 import json
+import logging
 from typing import List, Optional, Tuple, Union
 
 from aiohttp import ClientSession, ClientTimeout
@@ -29,6 +31,14 @@ OPENAI_EMPTY_USAGE_STATS = {
 }
 
 
+@dataclass()
+class OpenAIResponseData:
+    status: int
+    reason: str
+    headers: dict
+    body_from_json: dict
+
+
 async def single_setup_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     input_row: Union[dict, "pd.Series"],
@@ -39,7 +49,7 @@ async def single_setup_openai_chat_completion(
     async with create_chat_completion_client_session(
         config, is_setup_request=True
     ) as client_session:
-        (response_result, response_headers) = await do_openai_chat_completion(
+        response_data = await do_openai_chat_completion(
             client_session=client_session,
             config=config,
             input_row=input_row,
@@ -47,7 +57,9 @@ async def single_setup_openai_chat_completion(
             functions=functions,
             function_call=function_call,
         )
-        (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
+    response_result = response_data.body_from_json
+    response_headers = response_data.headers
+    (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
     ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
     return (model_output, usage, ratelimit_limit_requests)
 
@@ -92,10 +104,10 @@ async def parallel_openai_chat_completion(
             )
             for input_row in input_rows
         ]
-        task_results = await asyncio.gather(*tasks)
+        response_data_list = await asyncio.gather(*tasks)
     result_tuples = [
-        parse_chat_completion_message_and_usage(response_result)
-        for (response_result, _) in task_results
+        parse_chat_completion_message_and_usage(response_data.body_from_json)
+        for response_data in response_data_list
     ]
     unzipped_results = list(zip(*result_tuples))
     model_outputs = list(unzipped_results[0])
@@ -153,61 +165,64 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> Optional[Tuple[dict, dict]]:
-    prompt = curried_prompt_template(input_row)
-    if not prompt:
-        return None
-    payload = create_chat_completion_request_payload(
-        config=config,
-        prompt=prompt,
-        functions=functions,
-        function_call=function_call,
-    )
+) -> OpenAIResponseData:
     async with semaphore:
         return await _chat_completion_with_ratelimit(
             client_session=client_session,
-            payload=payload,
+            config=config,
+            input_row=input_row,
+            curried_prompt_template=curried_prompt_template,
+            functions=functions,
+            function_call=function_call,
         )
 
 
 async def _chat_completion_with_ratelimit(
     client_session: ClientSessionType,
-    payload: dict,
+    config: OpenAIChatCompletionConfig,
+    input_row: Union[dict, "pd.Series"],
+    curried_prompt_template: Callable,
+    functions: Optional[List[dict]] = None,
+    function_call: Union[None, dict, str] = None,
     num_ratelimit_retries: int = 0,
-) -> Tuple[dict, dict]:
-    logger.debug(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
-    async with client_session.post(
-        OPENAI_CHAT_COMPLETIONS_URL, json=payload
-    ) as response:
+) -> OpenAIResponseData:
+    response_data = await do_openai_chat_completion(
+        client_session=client_session,
+        config=config,
+        input_row=input_row,
+        curried_prompt_template=curried_prompt_template,
+        functions=functions,
+        function_call=function_call,
+        log_level=logging.DEBUG,
+    )
+    if response_data.status == 429:
+        if "exceeded your current quota" in response_data.reason:
+            raise ParallelParrotError(
+                f"{response_data.status=} {response_data.reason=}"
+            )
+        if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
+            raise ParallelParrotError(
+                f"Too many ratelimit retries: {num_ratelimit_retries=} for {input_row=}"
+            )
+        retry_after = float(response_data.headers.get("retry-after", "0"))
+        if retry_after > 0:
+            sleep_seconds = retry_after
+        else:
+            sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
         logger.debug(
-            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
+            f"Sleeping for {sleep_seconds=} due to ratelimit {response_data.status=} {response_data.headers=}"
         )
-        if response.status == 429:
-            reason = str(response.reason)
-            if "exceeded your current quota" in reason:
-                raise ParallelParrotError(f"{response.status=} {reason=}")
-            if num_ratelimit_retries >= MAX_NUM_RATELIMIT_RETRIES:
-                raise ParallelParrotError(
-                    f"Too many ratelimit retries: {num_ratelimit_retries=} for {payload=}"
-                )
-            retry_after = float(response.headers.get("retry-after", "0"))
-            if retry_after > 0:
-                sleep_seconds = retry_after
-            else:
-                sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
-            logger.debug(
-                f"Sleeping for {sleep_seconds=} due to ratelimit {response.status=} {response.headers=}"
-            )
-            await asyncio.sleep(sleep_seconds)
-            return await _chat_completion_with_ratelimit(
-                client_session=client_session,
-                payload=payload,
-                num_ratelimit_retries=(num_ratelimit_retries + 1),
-            )
-        response_result = await response.json()
-        logger.debug(f"Response {response_result=} from {payload=}")
-        response.raise_for_status()
-        return (response_result, dict(response.headers))
+        await asyncio.sleep(sleep_seconds)
+        return await _chat_completion_with_ratelimit(
+            client_session=client_session,
+            config=config,
+            input_row=input_row,
+            curried_prompt_template=curried_prompt_template,
+            functions=functions,
+            function_call=function_call,
+            num_ratelimit_retries=(num_ratelimit_retries + 1),
+        )
+    return response_data
 
 
 async def do_openai_chat_completion(
@@ -217,7 +232,8 @@ async def do_openai_chat_completion(
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> Tuple[dict, dict]:
+    log_level: int = logging.INFO,
+) -> OpenAIResponseData:
     prompt = curried_prompt_template(input_row)
     payload = create_chat_completion_request_payload(
         config=config,
@@ -225,17 +241,19 @@ async def do_openai_chat_completion(
         functions=functions,
         function_call=function_call,
     )
-    logger.info(f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
+    logger.log(log_level, f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        logger.info(
-            f"Response {response.status=} {response.reason=} from {payload=} {response.headers=}"
-        )
         response_result = await response.json()
-        logger.info(f"Response {response_result=} from {payload=}")
-        response.raise_for_status()
-        return (response_result, dict(response.headers))
+        response_data = OpenAIResponseData(
+            status=response.status,
+            reason=str(response.reason),
+            headers=dict(response.headers),
+            body_from_json=response_result,
+        )
+    logger.log(log_level, f"Response {asdict(response_data)=} from {payload=}")
+    return response_data
 
 
 def parse_chat_completion_message_and_usage(
