@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import namedtuple
 from dataclasses import dataclass, asdict
+from enum import Enum
 from typing import Dict, Optional, List, Union
 
 from aiohttp import ClientSession
@@ -17,14 +18,20 @@ ParallelParrotOutput = namedtuple("ParallelParrotOutput", ["output", "usage_stat
 ClientSessionType = Union[ClientSession, RetryClient]
 
 
+class TokenLimitMode(Enum):
+    RAISE_ERROR = "RAISE_ERROR"
+    TRUNCATE = "TRUNCATE"
+
+
 @dataclass()
 class LLMConfig(ABC):
     def __post_init__(self):
+        if self.token_limit_mode is None:
+            self.token_limit_mode = TokenLimitMode.RAISE_ERROR
         check_type(self)
 
-    @abstractmethod
     def get_nonpassthrough_names(self) -> List[str]:
-        pass
+        return []
 
     def to_payload_dict(self):
         raw_dict = asdict(self)
@@ -44,8 +51,8 @@ class OpenAIChatCompletionConfig(LLMConfig):
     """
 
     openai_api_key: str
-    openai_org_id: Optional[str] = None
     model: str = "gpt-3.5-turbo"
+    openai_org_id: Optional[str] = None
     system_message: Optional[str] = None
     temperature: Optional[float] = None
     top_p: Optional[float] = None
@@ -55,6 +62,11 @@ class OpenAIChatCompletionConfig(LLMConfig):
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, float]] = None
     user: Optional[str] = None
+    token_limit_mode: TokenLimitMode = TokenLimitMode.RAISE_ERROR
 
     def get_nonpassthrough_names(self) -> List[str]:
-        return ["openai_api_key", "system_message"]
+        return [
+            "openai_api_key",
+            "system_message",
+            "token_limit_mode",
+        ] + super().get_nonpassthrough_names()

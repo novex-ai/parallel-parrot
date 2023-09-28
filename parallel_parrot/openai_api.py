@@ -5,22 +5,30 @@ except ImportError:
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import logging
+import re
 from typing import List, Optional, Tuple, Union
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
-from .types import ParallelParrotError, ClientSessionType, OpenAIChatCompletionConfig
+from .types import (
+    ParallelParrotError,
+    TokenLimitMode,
+    ClientSessionType,
+    OpenAIChatCompletionConfig,
+)
 from .util import logger
+from .openai_util import openai_token_truncate
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
+MODEL_WARMUP_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = 1000
 MAX_NUM_RATELIMIT_RETRIES = 10
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
@@ -36,7 +44,7 @@ class OpenAIResponseData:
     status: int
     reason: str
     headers: dict
-    body_from_json: dict
+    body_from_json: dict = field(default_factory=dict)
 
 
 async def single_setup_openai_chat_completion(
@@ -246,6 +254,61 @@ async def do_openai_chat_completion(
         functions=functions,
         function_call=function_call,
     )
+    response_data = await _do_openai_chat_completion(
+        client_session=client_session,
+        payload=payload,
+        log_level=log_level,
+    )
+    print(f"{response_data=}")
+    if "error" in response_data.body_from_json:
+        error = response_data.body_from_json.get("error", {})
+        if error.get("code") == "model_needs_warming_up":
+            logger.log(log_level, f"Model needs warming up, sleeping {error=}")
+            await asyncio.sleep(MODEL_WARMUP_SLEEP_SECONDS)
+            return await do_openai_chat_completion(
+                client_session=client_session,
+                config=config,
+                input_row=input_row,
+                curried_prompt_template=curried_prompt_template,
+                functions=functions,
+                function_call=function_call,
+                log_level=log_level,
+            )
+        elif error.get("code") == "context_length_exceeded":
+            if config.token_limit_mode == TokenLimitMode.RAISE_ERROR:
+                raise ParallelParrotError(
+                    f"Context length exceeded: {error=} {payload=}"
+                )
+            elif config.token_limit_mode == TokenLimitMode.TRUNCATE:
+                (max_tokens, supplied_tokens) = parse_content_length_exceeded_error(
+                    error
+                )
+                logger.log(
+                    log_level,
+                    f"truncating prompt {max_tokens=} {supplied_tokens=} {error=}",
+                )
+                truncated_prompt = openai_token_truncate(
+                    prompt, config.model, max_tokens
+                )
+                payload = create_chat_completion_request_payload(
+                    config=config,
+                    prompt=truncated_prompt,
+                    functions=functions,
+                    function_call=function_call,
+                )
+                response_data = await _do_openai_chat_completion(
+                    client_session=client_session,
+                    payload=payload,
+                    log_level=log_level,
+                )
+    return response_data
+
+
+async def _do_openai_chat_completion(
+    client_session: ClientSessionType,
+    payload: dict,
+    log_level: int,
+):
     logger.log(log_level, f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
@@ -255,10 +318,22 @@ async def do_openai_chat_completion(
             status=response.status,
             reason=str(response.reason),
             headers=dict(response.headers),
-            body_from_json=response_result,
+            body_from_json=response_result if response_result is not None else {},
         )
     logger.log(log_level, f"Response {response_data=} from {payload=}")
     return response_data
+
+
+def parse_content_length_exceeded_error(error: dict):
+    message = error.get("message", "")
+    match = re.match(
+        r"This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens",
+        message,
+    )
+    if match:
+        return (int(match.group(1)), int(match.group(2)))
+    else:
+        raise ParallelParrotError(f"Unexpected {message=}")
 
 
 def parse_chat_completion_message_and_usage(
