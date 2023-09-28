@@ -28,7 +28,6 @@ OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
-MODEL_WARMUP_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = 1000
 MAX_NUM_RATELIMIT_RETRIES = 10
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
@@ -262,19 +261,7 @@ async def do_openai_chat_completion(
     print(f"{response_data=}")
     if "error" in response_data.body_from_json:
         error = response_data.body_from_json.get("error", {})
-        if error.get("code") == "model_needs_warming_up":
-            logger.log(log_level, f"Model needs warming up, sleeping {error=}")
-            await asyncio.sleep(MODEL_WARMUP_SLEEP_SECONDS)
-            return await do_openai_chat_completion(
-                client_session=client_session,
-                config=config,
-                input_row=input_row,
-                curried_prompt_template=curried_prompt_template,
-                functions=functions,
-                function_call=function_call,
-                log_level=log_level,
-            )
-        elif error.get("code") == "context_length_exceeded":
+        if error.get("code") == "context_length_exceeded":
             if config.token_limit_mode == TokenLimitMode.RAISE_ERROR:
                 raise ParallelParrotError(
                     f"Context length exceeded: {error=} {payload=}"
