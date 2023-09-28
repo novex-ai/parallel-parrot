@@ -24,7 +24,7 @@ from .util import logger
 from .openai_util import openai_token_truncate
 
 
-OPENAI_REQUEST_TIMEOUT_SECONDS = 80.0
+OPENAI_REQUEST_TIMEOUT_SECONDS = 120.0
 OPENAI_TOTAL_RETRIES = 10
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
@@ -270,7 +270,7 @@ async def do_openai_chat_completion(
                 (max_tokens, supplied_tokens) = parse_content_length_exceeded_error(
                     error
                 )
-                tokens_to_remove = supplied_tokens - max_tokens
+                tokens_to_remove = int(supplied_tokens - (max_tokens / 2))
                 logger.warn(
                     f"truncating prompt {tokens_to_remove=} {error=}",
                 )
