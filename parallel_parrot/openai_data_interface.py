@@ -14,8 +14,10 @@ from .openai_api import (
 from .types import ParallelParrotError, ParallelParrotOutput, OpenAIChatCompletionConfig
 from .util import (
     logger,
-    make_curried_prompt_template,
     sum_usage_stats,
+)
+from .util_template import (
+    make_curried_prompt_template,
 )
 from .util_dictlist import (
     append_model_outputs_dictlist,
@@ -37,7 +39,7 @@ async def parallel_openai_chat_completion_dictlist(
 ) -> ParallelParrotOutput:
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        input_dictlist=input_list,
+        input=input_list,
         prompt_template=prompt_template,
     )
     if config.n is not None and config.n > 1:
@@ -69,10 +71,9 @@ async def parallel_openai_chat_completion_pandas(
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
-    input_dictlist = input_df.to_dict(orient="records")
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        input_dictlist=input_dictlist,
+        input=input_df,
         prompt_template=prompt_template,
     )
     if config.n is not None and config.n > 1:
@@ -109,7 +110,7 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     )
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        input_dictlist=input_list,
+        input=input_list,
         prompt_template=prompt_template,
         functions=functions,
         function_call=function_call,
@@ -142,10 +143,9 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
         parameter_name="p",
         output_key_names=output_key_names,
     )
-    input_dictlist = input_df.to_dict(orient="records")
     (model_outputs, usage_stats_list) = await _parrot_openai_chat_completion(
         config=config,
-        input_dictlist=input_dictlist,
+        input=input_df,
         prompt_template=prompt_template,
         functions=functions,
         function_call=function_call,
@@ -165,20 +165,26 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
 
 async def _parrot_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    input_dictlist: List[dict],
+    input: Union[List[dict], "pd.DataFrame"],
     prompt_template: str,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> ParallelParrotOutput:
     curried_prompt_template = make_curried_prompt_template(prompt_template)
     # process a single row first, both to check for errors and to get the ratelimit_limit_requests
+    if isinstance(input, list):
+        first_row = input[0]
+    elif isinstance(input, pd.DataFrame):
+        first_row = input.iloc[0]
+    else:
+        raise ParallelParrotError(f"Unexpected type {type(input)=}")
     (
         model_output,
         usage_stats,
         response_headers,
     ) = await single_setup_openai_chat_completion(
         config=config,
-        input_dict=input_dictlist[0],
+        input_row=first_row,
         curried_prompt_template=curried_prompt_template,
         functions=functions,
         function_call=function_call,
@@ -186,10 +192,14 @@ async def _parrot_openai_chat_completion(
     model_outputs = [model_output]
     usage_stats_list = [usage_stats]
     ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
-    if len(input_dictlist) >= 2:
+    if len(input) >= 2:
+        if isinstance(input, list):
+            nonfirst_rows = input[1:]
+        elif isinstance(input, pd.DataFrame):
+            nonfirst_rows = input.iloc[1:, :]
         (_model_outputs, _usage_stats_list) = await parallel_openai_chat_completion(
             config=config,
-            input_dictlist=input_dictlist[1:],
+            input_table=nonfirst_rows,
             curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,

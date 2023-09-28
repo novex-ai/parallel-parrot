@@ -1,4 +1,5 @@
-from .util_async import run_async
+from asyncio_anywhere import asyncio_run as run_async
+
 from .types import OpenAIChatCompletionConfig
 from .core import (
     parallel_text_generation,

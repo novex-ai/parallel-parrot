@@ -1,3 +1,8 @@
+try:
+    import pandas as pd  # type: ignore
+except ImportError:
+    pd = None
+
 import asyncio
 from collections.abc import Callable
 import json
@@ -26,7 +31,7 @@ OPENAI_EMPTY_USAGE_STATS = {
 
 async def single_setup_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    input_dict: dict,
+    input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
@@ -37,7 +42,7 @@ async def single_setup_openai_chat_completion(
         (response_result, response_headers) = await do_openai_chat_completion(
             client_session=client_session,
             config=config,
-            input_dict=input_dict,
+            input_row=input_row,
             curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,
@@ -48,7 +53,7 @@ async def single_setup_openai_chat_completion(
 
 async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
-    input_dictlist: List[dict],
+    input_table: Union[List[dict], "pd.DataFrame"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
@@ -66,19 +71,25 @@ async def parallel_openai_chat_completion(
         config, is_setup_request=False
     ) as client_session:
         semaphore = asyncio.Semaphore(num_concurrent_requests)
+        if isinstance(input_table, list):
+            input_rows = input_table
+        elif isinstance(input_table, pd.DataFrame):
+            input_rows = [input_table.iloc[i] for i in range(len(input_table))]
+        else:
+            raise ParallelParrotError(f"Unexpected type {type(input_table)=}")
         tasks = [
             asyncio.create_task(
                 do_chat_completion_with_semaphore_and_ratelimit(
                     client_session=client_session,
                     semaphore=semaphore,
                     config=config,
-                    input_dict=input_dict,
+                    input_row=input_row,
                     curried_prompt_template=curried_prompt_template,
                     functions=functions,
                     function_call=function_call,
                 )
             )
-            for input_dict in input_dictlist
+            for input_row in input_rows
         ]
         task_results = await asyncio.gather(*tasks)
     result_tuples = [
@@ -137,12 +148,12 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
     client_session: ClientSessionType,
     semaphore: asyncio.Semaphore,
     config: OpenAIChatCompletionConfig,
-    input_dict: dict,
+    input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Optional[Tuple[dict, dict]]:
-    prompt = curried_prompt_template(input_dict)
+    prompt = curried_prompt_template(input_row)
     if not prompt:
         return None
     payload = create_chat_completion_request_payload(
@@ -201,12 +212,12 @@ async def _chat_completion_with_ratelimit(
 async def do_openai_chat_completion(
     client_session: ClientSessionType,
     config: OpenAIChatCompletionConfig,
-    input_dict: dict,
+    input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
 ) -> Tuple[dict, dict]:
-    prompt = curried_prompt_template(input_dict)
+    prompt = curried_prompt_template(input_row)
     payload = create_chat_completion_request_payload(
         config=config,
         prompt=prompt,
