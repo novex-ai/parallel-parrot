@@ -283,12 +283,13 @@ async def do_openai_chat_completion(
                 (max_tokens, supplied_tokens) = parse_content_length_exceeded_error(
                     error
                 )
+                tokens_to_remove = supplied_tokens - max_tokens
                 logger.log(
                     log_level,
-                    f"truncating prompt {max_tokens=} {supplied_tokens=} {error=}",
+                    f"truncating prompt {tokens_to_remove=} {error=}",
                 )
                 truncated_prompt = openai_token_truncate(
-                    prompt, config.model, max_tokens
+                    prompt, config.model, tokens_to_remove
                 )
                 payload = create_chat_completion_request_payload(
                     config=config,
@@ -326,8 +327,8 @@ async def _do_openai_chat_completion(
 
 def parse_content_length_exceeded_error(error: dict):
     message = error.get("message", "")
-    match = re.match(
-        r"This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens",
+    match = re.search(
+        r"maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens",
         message,
     )
     if match:
