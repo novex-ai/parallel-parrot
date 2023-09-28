@@ -329,26 +329,8 @@ def create_chat_completion_request_payload(
     """
     https://platform.openai.com/docs/api-reference/chat/create
     """
-    payload = {
-        "model": config.model,
-        "stream": False,
-    }
-    if config.temperature is not None:
-        payload["temperature"] = config.temperature
-    if config.top_p is not None:
-        payload["top_p"] = config.top_p
-    if config.n is not None:
-        payload["n"] = config.n
-    if config.max_tokens is not None:
-        payload["max_tokens"] = config.max_tokens
-    if config.presence_penalty is not None:
-        payload["presence_penalty"] = config.presence_penalty
-    if config.frequency_penalty is not None:
-        payload["frequency_penalty"] = config.frequency_penalty
-    if config.logit_bias is not None:
-        payload["logit_bias"] = config.logit_bias
-    if config.user is not None:
-        payload["user"] = config.user
+    payload = config.to_payload_dict()
+    payload["stream"] = False
     messages = []
     if config.system_message:
         messages.append({"role": "system", "content": config.system_message})
