@@ -35,7 +35,7 @@ async def single_setup_openai_chat_completion(
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
-) -> Tuple[Union[None, str, list], dict, dict]:
+) -> Tuple[Union[None, str, list], dict, Optional[str]]:
     async with create_chat_completion_client_session(
         config, is_setup_request=True
     ) as client_session:
@@ -48,7 +48,8 @@ async def single_setup_openai_chat_completion(
             function_call=function_call,
         )
         (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
-    return (model_output, usage, response_headers)
+    ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
+    return (model_output, usage, ratelimit_limit_requests)
 
 
 async def parallel_openai_chat_completion(

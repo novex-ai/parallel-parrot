@@ -181,7 +181,7 @@ async def _parrot_openai_chat_completion(
     (
         model_output,
         usage_stats,
-        response_headers,
+        ratelimit_limit_requests,
     ) = await single_setup_openai_chat_completion(
         config=config,
         input_row=first_row,
@@ -191,7 +191,6 @@ async def _parrot_openai_chat_completion(
     )
     model_outputs = [model_output]
     usage_stats_list = [usage_stats]
-    ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
     if len(input) >= 2:
         if isinstance(input, list):
             nonfirst_rows = input[1:]
