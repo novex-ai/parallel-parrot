@@ -217,32 +217,29 @@ async def _chat_completion_with_ratelimit(
                 f"Too many ratelimit retries: {num_ratelimit_retries=} for {input_row=}"
             )
         sleep_seconds = None
+        headers = response_data.headers
         if "error" in response_data.body_from_json:
             error = response_data.body_from_json.get("error", {})
             if error.get("code") == "rate_limit_exceeded":
                 # https://platform.openai.com/docs/guides/rate-limits/overview
                 if error.get("type") == "tokens":
-                    reset_seconds_str = response_data.headers.get(
-                        "x-ratelimit-reset-tokens", ""
-                    )
+                    reset_seconds_str = headers.get("x-ratelimit-reset-tokens")
                 elif error.get("type") == "requests":
-                    reset_seconds_str = response_data.headers.get(
-                        "x-ratelimit-reset-requests", ""
-                    )
+                    reset_seconds_str = headers.get("x-ratelimit-reset-requests")
                 else:
                     raise ParallelParrotError(f"Unexpected {error=}")
                 reset_seconds = _parse_seconds_from_header(reset_seconds_str)
                 if reset_seconds is not None:
                     sleep_seconds = float(reset_seconds)
         else:
-            retry_after = response_data.headers.get("retry-after", "")
+            retry_after = headers.get("retry-after")
             if retry_after:
                 sleep_seconds = float(retry_after)
         if sleep_seconds is None:
             sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
-        logger.debug(
+        logger.warn(
             f"Sleeping for {sleep_seconds=} due to ratelimit "
-            f" {response_data.status=} {response_data.reason=} {response_data.headers=}"
+            f" {response_data.status=} {response_data.reason=} {headers=}"
         )
         await asyncio.sleep(sleep_seconds)
         return await _chat_completion_with_ratelimit(
@@ -466,7 +463,9 @@ def create_openai_http_headers(config: OpenAIChatCompletionConfig) -> dict:
     return headers
 
 
-def _parse_seconds_from_header(header_value: str) -> Optional[float]:
+def _parse_seconds_from_header(header_value: Optional[str]) -> Optional[float]:
+    if header_value is None:
+        return None
     match = re.match(r"([0-9\.]+m)?([0-9\.]+)s", header_value)
     if match:
         minutes = match.group(1)
