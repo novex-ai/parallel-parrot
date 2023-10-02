@@ -21,6 +21,7 @@ ClientSessionType = Union[ClientSession, RetryClient]
 class TokenLimitMode(Enum):
     RAISE_ERROR = "RAISE_ERROR"
     TRUNCATE = "TRUNCATE"
+    IGNORE = "IGNORE"
 
 
 @dataclass()

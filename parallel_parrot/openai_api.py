@@ -305,6 +305,10 @@ async def do_openai_chat_completion(
                     payload=payload,
                     log_level=log_level,
                 )
+            elif config.token_limit_mode == TokenLimitMode.IGNORE:
+                logger.warn(
+                    f"Ignoring context length exceeded error: {error=} {payload=}"
+                )
     return response_data
 
 

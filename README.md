@@ -312,6 +312,7 @@ The `token_limit_mode` can accept one of two values:
 
 - `pp.TokenLimitMode.RAISE_ERROR` (default) raises an error when the token limit of the context window is exceeded
 - `pp.TokenLimitMode.TRUNCATE` - automatically truncates the prompt in response to token limit errors.  These are logged at the `logging.WARNING` log level.
+- `pp.TokenLimitMode.IGNORE` - ignore the error, returning `None` and logging a warning.
 
 ---
 
