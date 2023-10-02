@@ -216,13 +216,33 @@ async def _chat_completion_with_ratelimit(
             raise ParallelParrotError(
                 f"Too many ratelimit retries: {num_ratelimit_retries=} for {input_row=}"
             )
-        retry_after = float(response_data.headers.get("retry-after", "0"))
-        if retry_after > 0:
-            sleep_seconds = retry_after
+        sleep_seconds = None
+        if "error" in response_data.body_from_json:
+            error = response_data.body_from_json.get("error", {})
+            if error.get("code") == "rate_limit_exceeded":
+                # https://platform.openai.com/docs/guides/rate-limits/overview
+                if error.get("type") == "tokens":
+                    ratelimit_reset_seconds = response_data.headers.get(
+                        "x-ratelimit-reset-tokens", ""
+                    )
+                elif error.get("type") == "requests":
+                    ratelimit_reset_seconds = response_data.headers.get(
+                        "x-ratelimit-reset-requests", ""
+                    )
+                else:
+                    raise ParallelParrotError(f"Unexpected {error=}")
+                ratelimit_reset_seconds = ratelimit_reset_seconds.replace("s", "")
+                if ratelimit_reset_seconds:
+                    sleep_seconds = float(ratelimit_reset_seconds)
         else:
+            retry_after = response_data.headers.get("retry-after", "")
+            if retry_after:
+                sleep_seconds = float(retry_after)
+        if sleep_seconds is None:
             sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
         logger.debug(
-            f"Sleeping for {sleep_seconds=} due to ratelimit {response_data.status=} {response_data.headers=}"
+            f"Sleeping for {sleep_seconds=} due to ratelimit "
+            f" {response_data.status=} {response_data.reason=} {response_data.headers=}"
         )
         await asyncio.sleep(sleep_seconds)
         return await _chat_completion_with_ratelimit(
