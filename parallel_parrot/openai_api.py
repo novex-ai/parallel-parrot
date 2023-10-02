@@ -222,18 +222,18 @@ async def _chat_completion_with_ratelimit(
             if error.get("code") == "rate_limit_exceeded":
                 # https://platform.openai.com/docs/guides/rate-limits/overview
                 if error.get("type") == "tokens":
-                    ratelimit_reset_seconds = response_data.headers.get(
+                    reset_seconds_str = response_data.headers.get(
                         "x-ratelimit-reset-tokens", ""
                     )
                 elif error.get("type") == "requests":
-                    ratelimit_reset_seconds = response_data.headers.get(
+                    reset_seconds_str = response_data.headers.get(
                         "x-ratelimit-reset-requests", ""
                     )
                 else:
                     raise ParallelParrotError(f"Unexpected {error=}")
-                ratelimit_reset_seconds = ratelimit_reset_seconds.replace("s", "")
-                if ratelimit_reset_seconds:
-                    sleep_seconds = float(ratelimit_reset_seconds)
+                reset_seconds = _parse_seconds_from_header(reset_seconds_str)
+                if reset_seconds is not None:
+                    sleep_seconds = float(reset_seconds)
         else:
             retry_after = response_data.headers.get("retry-after", "")
             if retry_after:
@@ -464,6 +464,19 @@ def create_openai_http_headers(config: OpenAIChatCompletionConfig) -> dict:
     if config.openai_org_id:
         headers["OpenAI-Organization"] = config.openai_org_id
     return headers
+
+
+def _parse_seconds_from_header(header_value: str) -> Optional[float]:
+    match = re.match(r"([0-9\.]+m)?([0-9\.]+)s", header_value)
+    if match:
+        minutes = match.group(1)
+        seconds = match.group(2)
+        if minutes:
+            return float(minutes.replace("m", "")) * 60.0 + float(seconds)
+        else:
+            return float(seconds)
+    else:
+        return None
 
 
 def _parse_json_arguments_from_function_call(function_call: dict):
