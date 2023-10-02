@@ -21,8 +21,10 @@ sources = [
     "shopify",
 ]
 
-inputs = inputs * 2000
-sources = sources * 2000
+SCALE_FACTOR = 2
+
+inputs = inputs * SCALE_FACTOR
+sources = sources * SCALE_FACTOR
 
 
 if __name__ == "__main__":
