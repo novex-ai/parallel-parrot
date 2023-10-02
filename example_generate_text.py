@@ -12,19 +12,26 @@ config = pp.OpenAIChatCompletionConfig(
 
 logging.basicConfig(level=logging.DEBUG)
 
+inputs = [
+    "this is a super duper product that will change the world",
+    "do not buy this",
+]
+sources = [
+    "amazon",
+    "shopify",
+]
+
+inputs = inputs * 2000
+sources = sources * 2000
+
+
 if __name__ == "__main__":
     input_df = pd.DataFrame(
         {
-            "input": [
-                "this is a super duper product that will change the world",
-                "do not buy this",
-            ],
-            "source": [
-                "amazon",
-                "shopify",
-            ],
+            "input": inputs,
+            "source": sources,
         },
-        index=[100, 101],
+        index=range(len(inputs)),
     )
     (output_df, usage_stats_sum) = pp.run_async(
         pp.parallel_text_generation(
