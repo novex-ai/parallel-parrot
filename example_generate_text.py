@@ -21,7 +21,7 @@ sources = [
     "shopify",
 ]
 
-SCALE_FACTOR = 2
+SCALE_FACTOR = 2000
 
 inputs = inputs * SCALE_FACTOR
 sources = sources * SCALE_FACTOR
