@@ -297,15 +297,23 @@ async def _do_openai_chat_completion(
     log_level: int,
 ):
     logger.log(log_level, f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
+    # https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientResponse
     async with client_session.post(
         OPENAI_CHAT_COMPLETIONS_URL, json=payload
     ) as response:
-        response_result = await response.json()
+        if response.content_type == "application/json":
+            body_from_json = await response.json()
+        else:
+            body_from_json = {
+                "text": await response.text(),
+            }
+        if body_from_json is None:
+            body_from_json = {}
         response_data = OpenAIResponseData(
             status=response.status,
             reason=str(response.reason),
             headers=dict(response.headers),
-            body_from_json=response_result if response_result is not None else {},
+            body_from_json=body_from_json,
         )
     logger.log(log_level, f"Response {response_data=} from {payload=}")
     return response_data
