@@ -58,6 +58,7 @@ class OpenAIResponseData:
     reason: str
     headers: dict
     body_from_json: dict
+    complete: bool = False
 
 
 async def single_setup_openai_chat_completion(
@@ -78,7 +79,7 @@ async def single_setup_openai_chat_completion(
             functions=functions,
             function_call=function_call,
         )
-    if response_data.status != 200:
+    if not response_data.complete:
         raise ParallelParrotError(f"error in single_setup request: {response_data=}")
     response_result = response_data.body_from_json
     response_headers = response_data.headers
@@ -202,7 +203,7 @@ async def do_chat_completion_with_semaphore_and_ratelimit(
             functions=functions,
             function_call=function_call,
         )
-    if response_data.status != 200:
+    if not response_data.complete:
         raise ParallelParrotError(f"error in parallel request: {response_data=}")
     return response_data
 
@@ -332,6 +333,7 @@ async def do_openai_chat_completion(
                 logger.warn(
                     f"Ignoring context length exceeded error: {error=} {payload=}"
                 )
+                response_data.complete = True
     return response_data
 
 
@@ -339,7 +341,7 @@ async def _do_openai_chat_completion(
     client_session: ClientSessionType,
     payload: dict,
     log_level: int,
-):
+) -> OpenAIResponseData:
     global throttle_until_time
     throttle_seconds = throttle_until_time - time.monotonic()
     if throttle_seconds > 0:
@@ -363,6 +365,7 @@ async def _do_openai_chat_completion(
             reason=str(response.reason),
             headers=dict(response.headers),
             body_from_json=body_from_json,
+            complete=(response.status == 200),
         )
     logger.log(log_level, f"Response {response_data=} from {payload=}")
     return response_data
@@ -387,9 +390,8 @@ def parse_chat_completion_message_and_usage(
     https://platform.openai.com/docs/api-reference/chat/object
     """
     if response_result.get("object") != "chat.completion":
-        raise ParallelParrotError(
-            f"Unexpected object type: {response_result.get('object')}"
-        )
+        logger.warn(f"Unexpected {response_result=}")
+        return (None, OPENAI_EMPTY_USAGE_STATS)
     choices = response_result.get("choices", [])
     usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:
