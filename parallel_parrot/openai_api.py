@@ -13,7 +13,7 @@ import resource
 import time
 from typing import List, Optional, Tuple, Union
 
-from aiohttp import ClientSession, ClientTimeout, TCPConnector
+from aiohttp import ClientError, ClientSession, ClientTimeout, TCPConnector
 from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
 from .types import (
@@ -156,6 +156,7 @@ def create_chat_completion_client_session(
     # https://github.com/inyutin/aiohttp_retry/blob/master/aiohttp_retry/retry_options.py#L158
     # https://platform.openai.com/docs/guides/error-codes/api-errors
     retry_statuses = {409, 500, 502, 503}
+    retry_exceptions = {asyncio.TimeoutError, ClientError}
     if is_setup_request:
         retry_options = ExponentialRetry(
             attempts=OPENAI_TOTAL_RETRIES,
@@ -163,7 +164,7 @@ def create_chat_completion_client_session(
             max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
             factor=1.5,
             statuses=retry_statuses,
-            exceptions={asyncio.TimeoutError},
+            exceptions=retry_exceptions,
             retry_all_server_errors=False,
         )
     else:
@@ -173,7 +174,7 @@ def create_chat_completion_client_session(
             max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
             factor=2.0,
             statuses=retry_statuses,
-            exceptions={asyncio.TimeoutError},
+            exceptions=retry_exceptions,
             random_interval_size=1.5,
             retry_all_server_errors=False,
         )
