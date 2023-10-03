@@ -114,6 +114,7 @@ async def parallel_openai_chat_completion(
         for chunk in range(num_chunks):
             start_index = chunk * num_concurrent_requests
             end_index = min(start_index + num_concurrent_requests, len(input_table))
+            logger.info(f"processing chunk of data {start_index=} {end_index=}")
             if isinstance(input_table, list):
                 input_rows = input_table[start_index:end_index]
             elif isinstance(input_table, pd.DataFrame):
