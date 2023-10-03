@@ -8,6 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import json
 import logging
+import math
 import re
 import resource
 import time
@@ -36,7 +37,7 @@ rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 120.0
-OPENAI_TOTAL_RETRIES = 16
+MAX_HTTP_RETRIES = 16
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = max(120, rlimit_soft - 80)
@@ -108,28 +109,33 @@ async def parallel_openai_chat_completion(
     async with create_chat_completion_client_session(
         config, is_setup_request=False
     ) as client_session:
-        semaphore = asyncio.Semaphore(num_concurrent_requests)
-        if isinstance(input_table, list):
-            input_rows = input_table
-        elif isinstance(input_table, pd.DataFrame):
-            input_rows = [input_table.iloc[i] for i in range(len(input_table))]
-        else:
-            raise ParallelParrotError(f"Unexpected type {type(input_table)=}")
-        tasks = [
-            asyncio.create_task(
-                do_chat_completion_with_semaphore_and_ratelimit(
-                    client_session=client_session,
-                    semaphore=semaphore,
-                    config=config,
-                    input_row=input_row,
-                    curried_prompt_template=curried_prompt_template,
-                    functions=functions,
-                    function_call=function_call,
+        num_chunks = math.ceil(len(input_table) / num_concurrent_requests)
+        response_data_list = []
+        for chunk in range(num_chunks):
+            start_index = chunk * num_concurrent_requests
+            end_index = min(start_index + num_concurrent_requests, len(input_table))
+            if isinstance(input_table, list):
+                input_rows = input_table[start_index:end_index]
+            elif isinstance(input_table, pd.DataFrame):
+                input_rows = [
+                    input_table.iloc[i] for i in range(start_index, end_index)
+                ]
+            else:
+                raise ParallelParrotError(f"Unexpected type {type(input_table)=}")
+            tasks = [
+                asyncio.create_task(
+                    _chat_completion_with_ratelimit(
+                        client_session=client_session,
+                        config=config,
+                        input_row=input_row,
+                        curried_prompt_template=curried_prompt_template,
+                        functions=functions,
+                        function_call=function_call,
+                    )
                 )
-            )
-            for input_row in input_rows
-        ]
-        response_data_list = await asyncio.gather(*tasks)
+                for input_row in input_rows
+            ]
+            response_data_list += await asyncio.gather(*tasks)
     result_tuples = [
         parse_chat_completion_message_and_usage(response_data.body_from_json)
         for response_data in response_data_list
@@ -160,7 +166,7 @@ def create_chat_completion_client_session(
     retry_exceptions = {asyncio.TimeoutError, ClientError}
     if is_setup_request:
         retry_options = ExponentialRetry(
-            attempts=OPENAI_TOTAL_RETRIES,
+            attempts=MAX_HTTP_RETRIES,
             start_timeout=0.25,
             max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
             factor=1.5,
@@ -170,7 +176,7 @@ def create_chat_completion_client_session(
         )
     else:
         retry_options = JitterRetry(
-            attempts=OPENAI_TOTAL_RETRIES,
+            attempts=MAX_HTTP_RETRIES,
             start_timeout=1,
             max_timeout=OPENAI_TOTAL_TIMEOUT_SECONDS,
             factor=2.0,
@@ -183,29 +189,6 @@ def create_chat_completion_client_session(
         client_session=client_session, retry_options=retry_options
     )
     return retry_client_session
-
-
-async def do_chat_completion_with_semaphore_and_ratelimit(
-    client_session: ClientSessionType,
-    semaphore: asyncio.Semaphore,
-    config: OpenAIChatCompletionConfig,
-    input_row: Union[dict, "pd.Series"],
-    curried_prompt_template: Callable,
-    functions: Optional[List[dict]] = None,
-    function_call: Union[None, dict, str] = None,
-) -> OpenAIResponseData:
-    async with semaphore:
-        response_data = await _chat_completion_with_ratelimit(
-            client_session=client_session,
-            config=config,
-            input_row=input_row,
-            curried_prompt_template=curried_prompt_template,
-            functions=functions,
-            function_call=function_call,
-        )
-    if not response_data.complete:
-        raise ParallelParrotError(f"error in parallel request: {response_data=}")
-    return response_data
 
 
 async def _chat_completion_with_ratelimit(
@@ -258,7 +241,8 @@ async def _chat_completion_with_ratelimit(
         if sleep_seconds is None:
             sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
         throttle_until_time = max(
-            time.monotonic() + sleep_seconds + 0.5, throttle_until_time
+            time.monotonic() + sleep_seconds + RATELIMIT_RETRY_SLEEP_SECONDS,
+            throttle_until_time,
         )
         logger.warn(
             f"Sleeping for {sleep_seconds=} due to ratelimit "
