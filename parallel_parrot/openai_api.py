@@ -12,7 +12,7 @@ import re
 import time
 from typing import List, Optional, Tuple, Union
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout, TCPConnector
 from aiohttp_retry import ExponentialRetry, RetryClient, JitterRetry
 
 from .types import (
@@ -135,6 +135,7 @@ def create_chat_completion_client_session(
     headers = create_openai_http_headers(config)
     client_timeout = ClientTimeout(total=OPENAI_REQUEST_TIMEOUT_SECONDS)
     client_session = ClientSession(
+        connector=TCPConnector(limit=MAX_NUM_CONCURRENT_REQUESTS),
         headers=headers,
         timeout=client_timeout,
     )
