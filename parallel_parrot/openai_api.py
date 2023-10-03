@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import json
 import logging
 import re
+import resource
 import time
 from typing import List, Optional, Tuple, Union
 
@@ -25,11 +26,14 @@ from .util import logger
 from .openai_util import openai_token_truncate
 
 
+rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+
+
 OPENAI_REQUEST_TIMEOUT_SECONDS = 120.0
 OPENAI_TOTAL_RETRIES = 16
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
-MAX_NUM_CONCURRENT_REQUESTS = 600
+MAX_NUM_CONCURRENT_REQUESTS = max(300, rlimit_soft - 80)
 MAX_NUM_RATELIMIT_RETRIES = 20
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_EMPTY_USAGE_STATS = {
@@ -93,6 +97,7 @@ async def parallel_openai_chat_completion(
         )
     else:
         num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
+    logger.info(f"using {num_concurrent_requests=}")
     async with create_chat_completion_client_session(
         config, is_setup_request=False
     ) as client_session:
