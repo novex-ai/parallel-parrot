@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import json
 import logging
 import re
+import time
 from typing import List, Optional, Tuple, Union
 
 from aiohttp import ClientSession, ClientTimeout
@@ -29,13 +30,16 @@ OPENAI_TOTAL_RETRIES = 16
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = 1000
-MAX_NUM_RATELIMIT_RETRIES = 10
+MAX_NUM_RATELIMIT_RETRIES = 16
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_EMPTY_USAGE_STATS = {
     "prompt_tokens": 0,
     "completion_tokens": 0,
     "total_tokens": 0,
 }
+
+
+throttle_until_time = 0.0
 
 
 @dataclass()
@@ -199,6 +203,7 @@ async def _chat_completion_with_ratelimit(
     function_call: Union[None, dict, str] = None,
     num_ratelimit_retries: int = 0,
 ) -> OpenAIResponseData:
+    global throttle_until_time
     response_data = await do_openai_chat_completion(
         client_session=client_session,
         config=config,
@@ -238,8 +243,12 @@ async def _chat_completion_with_ratelimit(
                 sleep_seconds = float(retry_after)
         if sleep_seconds is None:
             sleep_seconds = RATELIMIT_RETRY_SLEEP_SECONDS
+        throttle_until_time = max(
+            time.monotonic() + sleep_seconds + 0.5, throttle_until_time
+        )
         logger.warn(
             f"Sleeping for {sleep_seconds=} due to ratelimit "
+            f" {throttle_until_time=}"
             f" {response_data.status=} {response_data.reason=} {headers=}"
         )
         await asyncio.sleep(sleep_seconds)
@@ -318,6 +327,11 @@ async def _do_openai_chat_completion(
     payload: dict,
     log_level: int,
 ):
+    global throttle_until_time
+    throttle_seconds = throttle_until_time - time.monotonic()
+    if throttle_seconds > 0:
+        logger.warn(f"Throttling for {throttle_seconds=}")
+        await asyncio.sleep(throttle_seconds)
     logger.log(log_level, f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     # https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientResponse
     async with client_session.post(
