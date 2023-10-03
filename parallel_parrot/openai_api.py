@@ -26,6 +26,12 @@ from .util import logger
 from .openai_util import openai_token_truncate
 
 
+# maximize the number of concurrent connections for this process
+rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+try:
+    resource.setrlimit(resource.RLIMIT_NOFILE, (rlimit_hard, rlimit_hard))
+except Exception as e:
+    logger.warn(f"Could not set rlimit: {e=}")
 rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 
 
