@@ -1,9 +1,52 @@
+import pytest
+
+from parallel_parrot.types import ParallelParrotError
 from parallel_parrot.openai_api_lib import (
     OPENAI_EMPTY_USAGE_STATS,
+    prep_openai_function_list_of_objects,
     parse_chat_completion_message_and_usage,
     parse_content_length_exceeded_error,
     parse_seconds_from_header,
 )
+
+
+def test_prep_openai_function_list_of_objects():
+    function_name = "test_function"
+    parameter_name = "test_parameter"
+    output_key_names = ["key1", "key2", "key3"]
+    expected_functions = [
+        {
+            "name": function_name,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    parameter_name: {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "key1": {"type": "string"},
+                                "key2": {"type": "string"},
+                                "key3": {"type": "string"},
+                            },
+                            "required": ["key1", "key2", "key3"],
+                        },
+                    },
+                },
+            },
+        },
+    ]
+    expected_function_call = {"name": function_name}
+
+    functions, function_call = prep_openai_function_list_of_objects(
+        function_name, parameter_name, output_key_names
+    )
+
+    assert functions == expected_functions
+    assert function_call == expected_function_call
+
+    with pytest.raises(ParallelParrotError):
+        prep_openai_function_list_of_objects(function_name, parameter_name, [])
 
 
 def test_parse_chat_completion_message_and_usage_simple():

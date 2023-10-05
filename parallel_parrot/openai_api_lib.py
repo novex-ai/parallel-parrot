@@ -27,6 +27,41 @@ class OpenAIResponseData:
     complete: bool = False
 
 
+def prep_openai_function_list_of_objects(
+    function_name: str, parameter_name: str, output_key_names: List[str]
+):
+    if len(output_key_names) == 0:
+        raise ParallelParrotError(f"{output_key_names=} must not be empty")
+    output_item_json_schema_properties = {
+        key: {
+            "type": "string",
+        }
+        for key in output_key_names
+    }
+    parameter_json_schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": output_item_json_schema_properties,
+            "required": output_key_names,
+        },
+    }
+    function_json_schema = {
+        "name": function_name,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                parameter_name: parameter_json_schema,
+            },
+        },
+    }
+    functions = [function_json_schema]
+    function_call = {
+        "name": function_name,
+    }
+    return (functions, function_call)
+
+
 def parse_chat_completion_message_and_usage(
     response_result: dict,
 ) -> Tuple[Union[None, str, list], dict]:

@@ -29,6 +29,7 @@ from .util_pandas import (
     append_one_to_many_model_outputs_pandas,
     append_one_to_many_objlist_outputs_pandas,
 )
+from .openai_api_lib import prep_openai_function_list_of_objects
 
 
 async def parallel_openai_chat_completion_dictlist(
@@ -103,7 +104,7 @@ async def parallel_openai_chat_completion_exploding_function_dictlist(
     Process a prompt which generates a list of objects.
     Explode those outputs into multiple rows with the object keys as column names
     """
-    (functions, function_call) = _prep_function_list_of_objects(
+    (functions, function_call) = prep_openai_function_list_of_objects(
         function_name="f",
         parameter_name="p",
         output_key_names=output_key_names,
@@ -138,7 +139,7 @@ async def parallel_openai_chat_completion_exploding_function_pandas(
         raise ParallelParrotError(
             "pandas is not installed. Please install pandas to use this function."
         )
-    (functions, function_call) = _prep_function_list_of_objects(
+    (functions, function_call) = prep_openai_function_list_of_objects(
         function_name="f",
         parameter_name="p",
         output_key_names=output_key_names,
@@ -207,38 +208,3 @@ async def _parrot_openai_chat_completion(
         model_outputs += _model_outputs
         usage_stats_list += _usage_stats_list
     return ParallelParrotOutput(output=model_outputs, usage_stats=usage_stats_list)
-
-
-def _prep_function_list_of_objects(
-    function_name: str, parameter_name: str, output_key_names: List[str]
-):
-    if len(output_key_names) == 0:
-        raise ParallelParrotError(f"{output_key_names=} must not be empty")
-    output_item_json_schema_properties = {
-        key: {
-            "type": "string",
-        }
-        for key in output_key_names
-    }
-    parameter_json_schema = {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": output_item_json_schema_properties,
-            "required": output_key_names,
-        },
-    }
-    function_json_schema = {
-        "name": function_name,
-        "parameters": {
-            "type": "object",
-            "properties": {
-                parameter_name: parameter_json_schema,
-            },
-        },
-    }
-    functions = [function_json_schema]
-    function_call = {
-        "name": function_name,
-    }
-    return (functions, function_call)
