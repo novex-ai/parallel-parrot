@@ -140,7 +140,7 @@ def _parse_chat_completion_choices_function_data(
             return parsed_arguments.get(parameter_name)
         return None
     else:
-        function_calls = list()
+        param_values = list()
         for choice in choices:
             message = choice.get("message", {})
             finish_reason = choice.get("finish_reason")
@@ -149,33 +149,26 @@ def _parse_chat_completion_choices_function_data(
             else:
                 function_call = message.get("function_call")
                 if function_call and function_call.get("name") == function_name:
-                    function_calls.append(function_call)
-        if len(function_calls) > 0:
-            parsed_arguments_list = [
-                _parse_json_arguments_from_function_call(function_call)
-                for function_call in function_calls
+                    parsed_arguments = _parse_json_arguments_from_function_call(
+                        function_call
+                    )
+                    if isinstance(parsed_arguments, dict):
+                        param_value = parsed_arguments.get(parameter_name)
+                        param_values.append(param_value)
+        if len(param_values) == 0:
+            return None
+        first_param_value = param_values[0]
+        if isinstance(first_param_value, list):
+            # reduce all of the list parameter outputs into a single list
+            output_list = [
+                element
+                for param_value in param_values
+                if isinstance(param_value, list)
+                for element in param_value
             ]
-            first_parsed_arguments = parsed_arguments_list[0]
-            single_function_param = len(first_parsed_arguments.keys()) == 1
-            if single_function_param:
-                param_name = next(iter(first_parsed_arguments))
-                param_value = first_parsed_arguments.get(param_name)
-                if isinstance(param_value, list):
-                    # reduce all of the list parameter outputs into a single list
-                    output_list = []
-                    for parsed_arguments in parsed_arguments_list:
-                        output_list += parsed_arguments.get(param_name, [])
-                    # de-nest a single list-valued parameter
-                    output = output_list
-                    return output_list
-                else:
-                    # de-nest a single parameter
-                    output = [
-                        parsed_arguments.get(param_name)
-                        for parsed_arguments in parsed_arguments_list
-                    ]
-                    return output
-            return function_calls
+            return output_list
+        else:
+            return param_values
 
 
 def parse_content_length_exceeded_error(error: dict):
