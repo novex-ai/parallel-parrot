@@ -312,7 +312,6 @@ async def do_openai_chat_completion(
         payload=payload,
         log_level=log_level,
     )
-    print(f"{response_data=}")
     if "error" in response_data.body_from_json:
         error = response_data.body_from_json.get("error", {})
         if error.get("code") == "context_length_exceeded":
