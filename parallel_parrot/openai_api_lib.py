@@ -85,7 +85,7 @@ def parse_chat_completion_message_and_usage(
         output = _parse_chat_completion_choices_text(choices)
         return (output, usage)
     elif function_name is not None and parameter_name is not None:
-        output = _parse_chat_completion_choices_function_data(
+        output = _parse_chat_completion_choices_function_list_of_objects(
             choices, function_name=function_name, parameter_name=parameter_name
         )
         return (output, usage)
@@ -95,7 +95,7 @@ def parse_chat_completion_message_and_usage(
         )
 
 
-def _parse_chat_completion_choices_text(choices: list):
+def _parse_chat_completion_choices_text(choices: list) -> Union[None, str, list]:
     if len(choices) == 1:
         # return a single string output when n=1
         choice = choices[0]
@@ -123,9 +123,9 @@ def _parse_chat_completion_choices_text(choices: list):
             return []
 
 
-def _parse_chat_completion_choices_function_data(
+def _parse_chat_completion_choices_function_list_of_objects(
     choices: list, function_name: str, parameter_name: str
-):
+) -> Union[None, str, list]:
     if len(choices) == 1:
         choice = choices[0]
         message = choice.get("message", {})
