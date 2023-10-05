@@ -367,12 +367,12 @@ async def _do_openai_chat_completion(
     ) as response:
         if response.content_type == "application/json":
             body_from_json = await response.json()
+            if body_from_json is None:
+                body_from_json = {}
         else:
             body_from_json = {
                 "text": await response.text(),
             }
-        if body_from_json is None:
-            body_from_json = {}
         response_data = OpenAIResponseData(
             status=response.status,
             reason=str(response.reason),
