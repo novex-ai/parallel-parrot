@@ -356,16 +356,20 @@ async def do_openai_chat_completion(
             message = choice.get("message", {})
             response_function_call = message.get("function_call")
             if response_function_call is None:
-                logger.warning(f"Unexpected {response_function_call=} in {choice=}")
+                logger.warning(
+                    f"Function not called.  Re-doing request {response_function_call=} in {choice=}"
+                )
                 found_invalid_function_response = True
             elif response_function_call.get("name") != function_call.get("name"):
-                logger.warning(f"Unexpected {response_function_call=} in {choice=}")
+                logger.warning(
+                    f"Mismatched function name. Re-doing request {response_function_call=} in {choice=}"
+                )
                 found_invalid_function_response = True
             elif (
                 parse_json_arguments_from_function_call(response_function_call) is None
             ):
                 logger.warning(
-                    f"unparsed arguments in {response_function_call=} in {choice=}"
+                    f"Invalid JSON arguments. Re-doing request {response_function_call=} in {choice=}"
                 )
                 found_invalid_function_response = True
         if found_invalid_function_response:
