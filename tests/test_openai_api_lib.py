@@ -1,4 +1,4 @@
-from parallel_parrot.openai_api import parse_content_length_exceeded_error
+from parallel_parrot.openai_api_lib import parse_content_length_exceeded_error
 
 
 def test_parse_content_length_exceeded_error():
