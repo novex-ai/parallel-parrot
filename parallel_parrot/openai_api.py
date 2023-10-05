@@ -25,6 +25,7 @@ from .util import logger
 from .openai_util import openai_token_truncate
 from .openai_api_lib import (
     OpenAIResponseData,
+    prep_openai_function_list_of_objects,
     create_chat_completion_request_payload,
     parse_chat_completion_message_and_usage,
     parse_content_length_exceeded_error,
@@ -57,9 +58,17 @@ async def single_setup_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
-    functions: Optional[List[dict]] = None,
-    function_call: Union[None, dict, str] = None,
+    function_output_key_names: Optional[List[str]],
 ) -> Tuple[Union[None, str, list], dict, Optional[str]]:
+    if function_output_key_names is not None:
+        (functions, function_call) = prep_openai_function_list_of_objects(
+            function_name="f",
+            parameter_name="p",
+            output_key_names=function_output_key_names,
+        )
+    else:
+        functions = None
+        function_call = None
     async with create_chat_completion_client_session(
         config, is_setup_request=True
     ) as client_session:
@@ -84,8 +93,7 @@ async def parallel_openai_chat_completion(
     config: OpenAIChatCompletionConfig,
     input_table: Union[List[dict], "pd.DataFrame"],
     curried_prompt_template: Callable,
-    functions: Optional[List[dict]] = None,
-    function_call: Union[None, dict, str] = None,
+    function_output_key_names: Optional[List[str]],
     ratelimit_limit_requests: Optional[str] = None,
 ) -> Tuple[list, List[dict]]:
     if ratelimit_limit_requests:
@@ -97,6 +105,15 @@ async def parallel_openai_chat_completion(
     else:
         num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
     logger.info(f"using {num_concurrent_requests=}")
+    if function_output_key_names is not None:
+        (functions, function_call) = prep_openai_function_list_of_objects(
+            function_name="f",
+            parameter_name="p",
+            output_key_names=function_output_key_names,
+        )
+    else:
+        functions = None
+        function_call = None
     async with create_chat_completion_client_session(
         config, is_setup_request=False
     ) as client_session:

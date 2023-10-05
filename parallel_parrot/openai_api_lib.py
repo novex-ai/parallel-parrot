@@ -30,6 +30,10 @@ class OpenAIResponseData:
 def prep_openai_function_list_of_objects(
     function_name: str, parameter_name: str, output_key_names: List[str]
 ):
+    """
+    specify to OpenAI that we want data formatted as a list of objects with string values
+    https://platform.openai.com/docs/guides/gpt/function-calling
+    """
     if len(output_key_names) == 0:
         raise ParallelParrotError(f"{output_key_names=} must not be empty")
     output_item_json_schema_properties = {
