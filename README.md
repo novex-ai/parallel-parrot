@@ -142,7 +142,7 @@ It does so by:
 - Generating an API call specifying that we want a list of objects,
   with each object containing values for each of the output_key_names. (OpenAI "functions")
 - Calling the LLM API with the prompt for each row
-- Parsing the returned JSON data into a list of dictionaries
+- Parsing the returned JSON data into a list of dictionaries, and retrying on invalid JSON
 - Mapping each returned dictionary to a row in the output dataframe or list of dictionaries.  This will result in "exploded" output, where
   the output will contain more than one row for a given input.
 
