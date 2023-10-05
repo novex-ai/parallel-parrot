@@ -341,7 +341,9 @@ async def do_openai_chat_completion(
                     functions=functions,
                     function_call=function_call,
                 )
-                retry_usage_list.append(response_data.body_from_json.get("usage", {}))
+                usage = response_data.body_from_json.get("usage")
+                if usage:
+                    retry_usage_list.append(usage)
                 response_data = await _do_openai_chat_completion(
                     client_session=client_session,
                     payload=payload,
@@ -376,15 +378,21 @@ async def do_openai_chat_completion(
                 )
                 found_invalid_function_response = True
         if found_invalid_function_response:
-            retry_usage_list.append(response_data.body_from_json.get("usage", {}))
+            usage = response_data.body_from_json.get("usage")
+            if usage:
+                retry_usage_list.append(usage)
             response_data = await _do_openai_chat_completion(
                 client_session=client_session,
                 payload=payload,
                 log_level=log_level,
             )
     if len(retry_usage_list) > 0:
-        last_usage = response_data.body_from_json["usage"]
-        total_usage = sum_usage_stats(retry_usage_list + [last_usage])
+        if response_data.body_from_json and "usage" in response_data.body_from_json:
+            last_usage = response_data.body_from_json["usage"]
+            total_usage_list = retry_usage_list + [last_usage]
+        else:
+            total_usage_list = retry_usage_list
+        total_usage = sum_usage_stats(total_usage_list)
         response_data.body_from_json["usage"] = total_usage
     return response_data
 
