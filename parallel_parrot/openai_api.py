@@ -37,7 +37,7 @@ rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 try:
     resource.setrlimit(resource.RLIMIT_NOFILE, (rlimit_hard, rlimit_hard))
 except Exception as e:
-    logger.warn(f"Could not set rlimit: {e=}")
+    logger.warning(f"Could not set rlimit: {e=}")
 rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 
 
@@ -236,7 +236,7 @@ async def _chat_completion_with_ratelimit(
             time.monotonic() + sleep_seconds + RATELIMIT_RETRY_SLEEP_SECONDS,
             throttle_until_time,
         )
-        logger.warn(
+        logger.warning(
             f"Sleeping for {sleep_seconds=} due to ratelimit "
             f" {throttle_until_time=}"
             f" {response_data.status=} {response_data.reason=} {headers=}"
@@ -288,7 +288,7 @@ async def do_openai_chat_completion(
                     error
                 )
                 tokens_to_remove = int(supplied_tokens - (max_tokens / 2))
-                logger.warn(
+                logger.warning(
                     f"truncating prompt {tokens_to_remove=} {error=}",
                 )
                 truncated_prompt = openai_token_truncate(
@@ -306,7 +306,7 @@ async def do_openai_chat_completion(
                     log_level=log_level,
                 )
             elif config.token_limit_mode == TokenLimitMode.IGNORE:
-                logger.warn(
+                logger.warning(
                     f"Ignoring context length exceeded error: {error=} {payload=}"
                 )
                 response_data.complete = True
@@ -321,7 +321,7 @@ async def _do_openai_chat_completion(
     global throttle_until_time
     throttle_seconds = throttle_until_time - time.monotonic()
     if throttle_seconds > 0:
-        logger.warn(f"Throttling for {throttle_seconds=}")
+        logger.info(f"Throttling for {throttle_seconds=}")
         await asyncio.sleep(throttle_seconds)
     logger.log(log_level, f"POST to {OPENAI_CHAT_COMPLETIONS_URL} with {payload=}")
     # https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientResponse
