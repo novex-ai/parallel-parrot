@@ -68,6 +68,8 @@ def prep_openai_function_list_of_objects(
 
 def parse_chat_completion_message_and_usage(
     response_result: dict,
+    function_name: Optional[str] = None,
+    parameter_name: Optional[str] = None,
 ) -> Tuple[Union[None, str, list], dict]:
     """
     https://platform.openai.com/docs/api-reference/chat/object
@@ -79,29 +81,33 @@ def parse_chat_completion_message_and_usage(
     usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
     if len(choices) == 0:
         return (None, usage)
-    elif len(choices) == 1:
+    elif function_name is None and parameter_name is None:
+        output = _parse_chat_completion_choices_text(choices)
+        return (output, usage)
+    elif function_name is not None and parameter_name is not None:
+        output = _parse_chat_completion_choices_function_data(
+            choices, function_name=function_name, parameter_name=parameter_name
+        )
+        return (output, usage)
+    else:
+        raise ParallelParrotError(
+            f"Unexpected {function_name=} {parameter_name=} {choices=}"
+        )
+
+
+def _parse_chat_completion_choices_text(choices: list):
+    if len(choices) == 1:
+        # return a single string output when n=1
         choice = choices[0]
         message = choice.get("message", {})
         finish_reason = choice.get("finish_reason")
         if finish_reason != "stop":
             logger.warning(f"Unexpected {finish_reason=} in {choice=}")
         content = message.get("content")
-        if content:
-            return (content, usage)
-        function_call = message.get("function_call")
-        if function_call:
-            parsed_arguments = _parse_json_arguments_from_function_call(function_call)
-            single_function_param = len(parsed_arguments.keys()) == 1
-            if single_function_param:
-                # de-nest a single parameter
-                param_name = next(iter(parsed_arguments))
-                return (parsed_arguments.get(param_name), usage)
-            else:
-                return (parsed_arguments, usage)
-        return (None, usage)
+        return content
     else:
+        # return a list of string outputs when n > 1
         content_set = set()
-        function_calls = list()
         for choice in choices:
             message = choice.get("message", {})
             finish_reason = choice.get("finish_reason")
@@ -110,14 +116,41 @@ def parse_chat_completion_message_and_usage(
             content = message.get("content")
             if content:
                 content_set.add(content)
-            else:
-                function_call = message.get("function_call")
-                if function_call:
-                    function_calls.append(function_call)
         if len(content_set) > 0:
             # return a deduped list of string outputs
-            return (list(content_set), usage)
-        elif len(function_calls) > 0:
+            return list(content_set)
+        else:
+            return []
+
+
+def _parse_chat_completion_choices_function_data(
+    choices: list, function_name: str, parameter_name: str
+):
+    if len(choices) == 1:
+        choice = choices[0]
+        message = choice.get("message", {})
+        finish_reason = choice.get("finish_reason")
+        if finish_reason != "stop":
+            logger.warning(f"Unexpected {finish_reason=} in {choice=}")
+        function_call = message.get("function_call")
+        if function_call and function_call.get("name") == function_name:
+            parsed_arguments = _parse_json_arguments_from_function_call(function_call)
+            if parsed_arguments is None:
+                return None
+            return parsed_arguments.get(parameter_name)
+        return None
+    else:
+        function_calls = list()
+        for choice in choices:
+            message = choice.get("message", {})
+            finish_reason = choice.get("finish_reason")
+            if finish_reason != "stop":
+                logger.warning(f"Unexpected {finish_reason=} in {choice=}")
+            else:
+                function_call = message.get("function_call")
+                if function_call and function_call.get("name") == function_name:
+                    function_calls.append(function_call)
+        if len(function_calls) > 0:
             parsed_arguments_list = [
                 _parse_json_arguments_from_function_call(function_call)
                 for function_call in function_calls
@@ -134,17 +167,15 @@ def parse_chat_completion_message_and_usage(
                         output_list += parsed_arguments.get(param_name, [])
                     # de-nest a single list-valued parameter
                     output = output_list
-                    return (output, usage)
+                    return output_list
                 else:
                     # de-nest a single parameter
                     output = [
                         parsed_arguments.get(param_name)
                         for parsed_arguments in parsed_arguments_list
                     ]
-                    return (output, usage)
-            return (function_calls, usage)
-        else:
-            return (None, usage)
+                    return output
+            return function_calls
 
 
 def parse_content_length_exceeded_error(error: dict):
@@ -210,5 +241,5 @@ def _parse_json_arguments_from_function_call(function_call: dict):
         parsed_arguments = json.loads(arguments)
         return parsed_arguments
     except Exception as e:
-        logger.warn(f"Could not parse arguments in {function_call=} {e=}")
+        logger.warning(f"Could not parse arguments in {function_call=} {e=}")
     return None

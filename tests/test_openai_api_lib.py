@@ -91,7 +91,7 @@ def test_parse_chat_completion_message_and_usage_text():
                 }
             ],
             "usage": {"prompt_tokens": 33, "completion_tokens": 2, "total_tokens": 35},
-        }
+        },
     ) == ("NEGATIVE", {"prompt_tokens": 33, "completion_tokens": 2, "total_tokens": 35})
     assert parse_chat_completion_message_and_usage(
         {
@@ -162,7 +162,9 @@ def test_parse_chat_completion_message_and_usage_function_call():
                 "completion_tokens": 491,
                 "total_tokens": 720,
             },
-        }
+        },
+        "f",
+        "p",
     ) == (
         [
             {

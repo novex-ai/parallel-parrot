@@ -49,6 +49,8 @@ RATELIMIT_RETRY_SLEEP_SECONDS = 5
 MAX_NUM_CONCURRENT_REQUESTS = max(120, rlimit_soft - 80)
 MAX_NUM_RATELIMIT_RETRIES = 20
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_FUNCTION_NAME = "f"
+OPENAI_FUNCTION_PARAMETER_NAME = "p"
 
 
 throttle_until_time = 0.0
@@ -61,12 +63,16 @@ async def single_setup_openai_chat_completion(
     function_output_key_names: Optional[List[str]],
 ) -> Tuple[Union[None, str, list], dict, Optional[str]]:
     if function_output_key_names is not None:
+        function_name = OPENAI_FUNCTION_NAME
+        parameter_name = OPENAI_FUNCTION_PARAMETER_NAME
         (functions, function_call) = prep_openai_function_list_of_objects(
-            function_name="f",
-            parameter_name="p",
+            function_name=function_name,
+            parameter_name=parameter_name,
             output_key_names=function_output_key_names,
         )
     else:
+        function_name = None
+        parameter_name = None
         functions = None
         function_call = None
     async with create_chat_completion_client_session(
@@ -84,7 +90,11 @@ async def single_setup_openai_chat_completion(
         raise ParallelParrotError(f"error in single_setup request: {response_data=}")
     response_result = response_data.body_from_json
     response_headers = response_data.headers
-    (model_output, usage) = parse_chat_completion_message_and_usage(response_result)
+    (model_output, usage) = parse_chat_completion_message_and_usage(
+        response_result,
+        function_name=function_name,
+        parameter_name=parameter_name,
+    )
     ratelimit_limit_requests = response_headers.get("x-ratelimit-limit-requests")
     return (model_output, usage, ratelimit_limit_requests)
 
@@ -106,12 +116,16 @@ async def parallel_openai_chat_completion(
         num_concurrent_requests = MAX_NUM_CONCURRENT_REQUESTS
     logger.info(f"using {num_concurrent_requests=}")
     if function_output_key_names is not None:
+        function_name = OPENAI_FUNCTION_NAME
+        parameter_name = OPENAI_FUNCTION_PARAMETER_NAME
         (functions, function_call) = prep_openai_function_list_of_objects(
-            function_name="f",
-            parameter_name="p",
+            function_name=function_name,
+            parameter_name=parameter_name,
             output_key_names=function_output_key_names,
         )
     else:
+        function_name = None
+        parameter_name = None
         functions = None
         function_call = None
     async with create_chat_completion_client_session(
@@ -146,7 +160,11 @@ async def parallel_openai_chat_completion(
             ]
             response_data_list += await asyncio.gather(*tasks)
     result_tuples = [
-        parse_chat_completion_message_and_usage(response_data.body_from_json)
+        parse_chat_completion_message_and_usage(
+            response_data.body_from_json,
+            function_name=function_name,
+            parameter_name=parameter_name,
+        )
         for response_data in response_data_list
     ]
     unzipped_results = list(zip(*result_tuples))
