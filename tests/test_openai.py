@@ -206,6 +206,49 @@ def test_parallel_openai_chat_completion_exploding_function_dictlist(
                         "content": None,
                         "function_call": {
                             "name": "f",
+                            "arguments": '{\n  "p": [\n    {\n      "question": "INVALID_JSON"',
+                        },
+                    },
+                    "finish_reason": "stop",
+                },
+                {
+                    "index": 1,
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {
+                            "name": "f",
+                            "arguments": '{\n  "p": [\n    {\n      "question": "INVALID_JSON"',
+                        },
+                    },
+                    "finish_reason": "stop",
+                },
+            ],
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            },
+        },
+    )
+    mock_aioresponse.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={
+            "x-ratelimit-limit-requests": "3500",
+        },
+        payload={
+            "id": "chatcmpl-7wMjGKIjYVB5KxUEWixvT2AZzPAuA",
+            "object": "chat.completion",
+            "created": 1694144750,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {
+                            "name": "f",
                             "arguments": '{\n  "p": [\n    {\n      "question": "Who was George Washington?",\n      "answer": "George Washington was an American military officer, statesman, and Founding Father who served as the first president of the United States from 1789 to 1797."\n    },\n    {\n      "question": "When did George Washington serve as the first president of the United States?",\n      "answer": "George Washington served as the first president of the United States from 1789 to 1797."\n    },\n    {\n      "question": "What role did George Washington play in the American Revolutionary War?",\n      "answer": "George Washington led Patriot forces to victory in the American Revolutionary War."\n    },\n    {\n      "question": "What role did George Washington play in drafting the Constitution of the United States?",\n      "answer": "George Washington served as president of the Constitutional Convention in 1787, which drafted and ratified the Constitution of the United States."\n    },\n    {\n      "question": "What is George Washington often referred to as?",\n      "answer": "George Washington is often referred to as the \\"Father of his Country\\"."\n    }\n  ]\n}',
                         },
                     },

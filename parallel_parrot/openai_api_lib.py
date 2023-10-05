@@ -134,7 +134,7 @@ def _parse_chat_completion_choices_function_list_of_objects(
             logger.warning(f"Unexpected {finish_reason=} in {choice=}")
         function_call = message.get("function_call")
         if function_call and function_call.get("name") == function_name:
-            parsed_arguments = _parse_json_arguments_from_function_call(function_call)
+            parsed_arguments = parse_json_arguments_from_function_call(function_call)
             if parsed_arguments is None:
                 return None
             return parsed_arguments.get(parameter_name)
@@ -149,7 +149,7 @@ def _parse_chat_completion_choices_function_list_of_objects(
             else:
                 function_call = message.get("function_call")
                 if function_call and function_call.get("name") == function_name:
-                    parsed_arguments = _parse_json_arguments_from_function_call(
+                    parsed_arguments = parse_json_arguments_from_function_call(
                         function_call
                     )
                     if isinstance(parsed_arguments, dict):
@@ -226,7 +226,7 @@ def parse_seconds_from_header(header_value: Optional[str]) -> Optional[float]:
         return None
 
 
-def _parse_json_arguments_from_function_call(function_call: dict):
+def parse_json_arguments_from_function_call(function_call: dict):
     arguments = function_call.get("arguments")
     if not arguments:
         return None

@@ -17,7 +17,7 @@ def append_one_to_many_model_outputs_dictlist(
 ) -> List[dict]:
     output_list = []
     for input_dict, model_output in zip(input_list, model_outputs):
-        if len(model_output) > 0:
+        if isinstance(model_output, list) and len(model_output) > 0:
             for model_output_item in model_output:
                 output_dict = copy.copy(input_dict)
                 output_dict[output_key] = model_output_item
@@ -36,7 +36,7 @@ def append_one_to_many_objlist_outputs_dictlist(
 ) -> List[dict]:
     output_list = []
     for input_dict, objlist_output in zip(input_list, objlist_outputs):
-        if len(objlist_output) > 0:
+        if isinstance(objlist_output, list) and len(objlist_output) > 0:
             for obj in objlist_output:
                 output_dict = copy.copy(input_dict)
                 for key in output_key_names:

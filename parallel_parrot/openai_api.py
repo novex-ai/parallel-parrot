@@ -21,7 +21,7 @@ from .types import (
     ClientSessionType,
     OpenAIChatCompletionConfig,
 )
-from .util import logger
+from .util import logger, sum_usage_stats
 from .openai_util import openai_token_truncate
 from .openai_api_lib import (
     OpenAIResponseData,
@@ -30,6 +30,7 @@ from .openai_api_lib import (
     parse_chat_completion_message_and_usage,
     parse_content_length_exceeded_error,
     parse_seconds_from_header,
+    parse_json_arguments_from_function_call,
 )
 
 
@@ -224,7 +225,7 @@ async def _chat_completion_with_ratelimit(
     input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
-    function_call: Union[None, dict, str] = None,
+    function_call: Optional[dict] = None,
     num_ratelimit_retries: int = 0,
 ) -> OpenAIResponseData:
     global throttle_until_time
@@ -297,7 +298,7 @@ async def do_openai_chat_completion(
     input_row: Union[dict, "pd.Series"],
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
-    function_call: Union[None, dict, str] = None,
+    function_call: Optional[dict] = None,
     log_level: int = logging.INFO,
 ) -> OpenAIResponseData:
     prompt = curried_prompt_template(input_row)
@@ -312,6 +313,7 @@ async def do_openai_chat_completion(
         payload=payload,
         log_level=log_level,
     )
+    retry_usage_list = []
     if "error" in response_data.body_from_json:
         error = response_data.body_from_json.get("error", {})
         if error.get("code") == "context_length_exceeded":
@@ -325,7 +327,7 @@ async def do_openai_chat_completion(
                 )
                 tokens_to_remove = int(supplied_tokens - (max_tokens / 2))
                 logger.warning(
-                    f"truncating prompt {tokens_to_remove=} {error=}",
+                    f"truncating prompt and re-doing request {tokens_to_remove=} {error=}",
                 )
                 truncated_prompt = openai_token_truncate(
                     prompt, config.model, tokens_to_remove
@@ -336,6 +338,7 @@ async def do_openai_chat_completion(
                     functions=functions,
                     function_call=function_call,
                 )
+                retry_usage_list.append(response_data.body_from_json.get("usage", {}))
                 response_data = await _do_openai_chat_completion(
                     client_session=client_session,
                     payload=payload,
@@ -346,6 +349,36 @@ async def do_openai_chat_completion(
                     f"Ignoring context length exceeded error: {error=} {payload=}"
                 )
                 response_data.complete = True
+    elif function_call is not None:
+        choices = response_data.body_from_json.get("choices", [])
+        found_invalid_function_response = False
+        for choice in choices:
+            message = choice.get("message", {})
+            response_function_call = message.get("function_call")
+            if response_function_call is None:
+                logger.warning(f"Unexpected {response_function_call=} in {choice=}")
+                found_invalid_function_response = True
+            elif response_function_call.get("name") != function_call.get("name"):
+                logger.warning(f"Unexpected {response_function_call=} in {choice=}")
+                found_invalid_function_response = True
+            elif (
+                parse_json_arguments_from_function_call(response_function_call) is None
+            ):
+                logger.warning(
+                    f"unparsed arguments in {response_function_call=} in {choice=}"
+                )
+                found_invalid_function_response = True
+        if found_invalid_function_response:
+            retry_usage_list.append(response_data.body_from_json.get("usage", {}))
+            response_data = await _do_openai_chat_completion(
+                client_session=client_session,
+                payload=payload,
+                log_level=log_level,
+            )
+    if len(retry_usage_list) > 0:
+        last_usage = response_data.body_from_json["usage"]
+        total_usage = sum_usage_stats(retry_usage_list + [last_usage])
+        response_data.body_from_json["usage"] = total_usage
     return response_data
 
 
