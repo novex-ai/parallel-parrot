@@ -226,6 +226,8 @@ async def _chat_completion_with_ratelimit(
                 reset_seconds = parse_seconds_from_header(reset_seconds_str)
                 if reset_seconds is not None:
                     sleep_seconds = float(reset_seconds)
+            elif error.get("code") == "insufficient_quota":
+                raise ParallelParrotError(f"Insufficient quota: {response_data=}")
         else:
             retry_after = headers.get("retry-after")
             if retry_after:
