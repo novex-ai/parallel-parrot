@@ -34,7 +34,7 @@ def parse_chat_completion_message_and_usage(
     https://platform.openai.com/docs/api-reference/chat/object
     """
     if response_result.get("object") != "chat.completion":
-        logger.warn(f"Unexpected {response_result=}")
+        logger.warning(f"Unexpected {response_result=}")
         return (None, OPENAI_EMPTY_USAGE_STATS)
     choices = response_result.get("choices", [])
     usage = response_result.get("usage", OPENAI_EMPTY_USAGE_STATS)
@@ -146,14 +146,19 @@ def create_chat_completion_request_payload(
 def parse_seconds_from_header(header_value: Optional[str]) -> Optional[float]:
     if header_value is None:
         return None
-    match = re.match(r"([0-9\.]+m)?([0-9\.]+)s", header_value)
+    match = re.match(r"([0-9\.]+m)?([0-9\.]+s)?", header_value)
     if match:
-        minutes = match.group(1)
-        seconds = match.group(2)
-        if minutes:
-            return float(minutes.replace("m", "")) * 60.0 + float(seconds)
+        minutes_str = match.group(1)
+        if minutes_str:
+            minutes = float(minutes_str.replace("m", ""))
         else:
-            return float(seconds)
+            minutes = 0.0
+        seconds_str = match.group(2)
+        if seconds_str:
+            seconds = float(seconds_str.replace("s", ""))
+        else:
+            seconds = 0.0
+        return (minutes * 60.0) + seconds
     else:
         return None
 
