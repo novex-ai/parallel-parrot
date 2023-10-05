@@ -8,7 +8,6 @@ from collections.abc import Callable
 
 import logging
 import math
-import resource
 import time
 from typing import List, Optional, Tuple, Union
 
@@ -33,21 +32,25 @@ from .openai_api_lib import (
     parse_json_arguments_from_function_call,
 )
 
-
-# maximize the number of concurrent connections for this process
-rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 try:
-    resource.setrlimit(resource.RLIMIT_NOFILE, (rlimit_hard, rlimit_hard))
-except Exception as e:
-    logger.warning(f"Could not set rlimit: {e=}")
-rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    import resource
+
+    # maximize the number of concurrent connections for this process
+    rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    try:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (rlimit_hard, rlimit_hard))
+    except Exception as e:
+        logger.warning(f"Could not set rlimit: {e=}")
+    rlimit_soft, rlimit_hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    MAX_NUM_CONCURRENT_REQUESTS = max(120, rlimit_soft - 80)
+except ImportError:
+    MAX_NUM_CONCURRENT_REQUESTS = 120
 
 
 OPENAI_REQUEST_TIMEOUT_SECONDS = 120.0
 MAX_HTTP_RETRIES = 16
 OPENAI_TOTAL_TIMEOUT_SECONDS = 600.0
 RATELIMIT_RETRY_SLEEP_SECONDS = 5
-MAX_NUM_CONCURRENT_REQUESTS = max(120, rlimit_soft - 80)
 MAX_NUM_RATELIMIT_RETRIES = 20
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_FUNCTION_NAME = "f"
