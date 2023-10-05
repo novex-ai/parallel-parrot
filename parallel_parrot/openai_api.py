@@ -280,7 +280,6 @@ async def _chat_completion_with_ratelimit(
         logger.warning(
             f"Sleeping for {sleep_seconds=} due to ratelimit "
             f" {throttle_until_time=}"
-            f" {response_data.status=} {response_data.reason=} {headers=}"
         )
         await asyncio.sleep(sleep_seconds)
         return await _chat_completion_with_ratelimit(
