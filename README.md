@@ -47,7 +47,8 @@ Define an API configuration object:
 import parallel_parrot as pp
 
 config = pp.OpenAIChatCompletionConfig(
-    openai_api_key="*your API key*"
+    openai_api_key="*your API key*",
+    model="gpt-3.5-turbo"
 )
 ```
 
@@ -75,6 +76,7 @@ import parallel_parrot as pp
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key="*your API key*",
+    model="gpt-3.5-turbo",
     system_message="you are a very precise assistant",
 )
 
@@ -153,6 +155,7 @@ import parallel_parrot as pp
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key="*your API key*",
+    model="gpt-3.5-turbo",
     n=3,  # tip: to generate many creative outputs, it often makes sense to use n > 1
 )
 
