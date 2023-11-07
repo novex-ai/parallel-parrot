@@ -52,7 +52,7 @@ class OpenAIChatCompletionConfig(LLMConfig):
     """
 
     openai_api_key: str
-    model: str = "gpt-3.5-turbo"
+    model: str = "gpt-3.5-turbo-1106"
     openai_org_id: Optional[str] = None
     system_message: Optional[str] = None
     temperature: Optional[float] = None

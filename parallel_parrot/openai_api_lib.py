@@ -63,7 +63,12 @@ def prep_openai_function_list_of_objects(
     function_call = {
         "name": function_name,
     }
-    return (functions, function_call)
+    quoted_key_names = [f'"{key}"' for key in output_key_names]
+    comma_separated_key_names = ", ".join(quoted_key_names)
+    function_system_prompt = (
+        f"return a list of objects with keys {comma_separated_key_names} in JSON format"
+    )
+    return (functions, function_call, function_system_prompt)
 
 
 def parse_chat_completion_message_and_usage(
@@ -188,6 +193,7 @@ def create_chat_completion_request_payload(
     prompt: str,
     functions: Optional[List[dict]] = None,
     function_call: Union[None, dict, str] = None,
+    function_system_prompt: Optional[str] = None,
 ) -> dict:
     """
     https://platform.openai.com/docs/api-reference/chat/create
@@ -197,6 +203,9 @@ def create_chat_completion_request_payload(
     messages = []
     if config.system_message:
         messages.append({"role": "system", "content": config.system_message})
+    if function_system_prompt is not None:
+        messages.append({"role": "system", "content": function_system_prompt})
+        payload["response_format"] = {"type": "json_object"}
     messages.append({"role": "user", "content": prompt})
     payload["messages"] = messages
     if functions is not None:

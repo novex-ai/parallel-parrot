@@ -23,7 +23,7 @@ Use cases:
 
 Main Features:
 - Supports both pandas dataframes and native python lists of dictionaries
-- Supports OpenAI Chat Completion API, with structured output "functions" (more LLMs planned in the future)
+- Supports OpenAI Chat Completion API, with structured output "functions" (more LLMs planned in the future) - including supporting OpenAI JSON mode
 - Output formatted data for fine-tuning
 
 Other Features:
@@ -155,7 +155,7 @@ import parallel_parrot as pp
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key="*your API key*",
-    model="gpt-3.5-turbo",
+    model="gpt-3.5-turbo-1106",
     n=3,  # tip: to generate many creative outputs, it often makes sense to use n > 1
 )
 

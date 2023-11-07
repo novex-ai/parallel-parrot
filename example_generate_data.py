@@ -11,7 +11,7 @@ from parallel_parrot.prompt_templates import (
 
 config = pp.OpenAIChatCompletionConfig(
     openai_api_key=os.environ["OPENAI_API_KEY"],
-    model="gpt-3.5-turbo-0613",
+    model="gpt-3.5-turbo-1106",
     n=2,
 )
 

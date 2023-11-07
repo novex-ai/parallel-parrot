@@ -69,7 +69,11 @@ async def single_setup_openai_chat_completion(
     if function_output_key_names is not None:
         function_name = OPENAI_FUNCTION_NAME
         parameter_name = OPENAI_FUNCTION_PARAMETER_NAME
-        (functions, function_call) = prep_openai_function_list_of_objects(
+        (
+            functions,
+            function_call,
+            function_system_prompt,
+        ) = prep_openai_function_list_of_objects(
             function_name=function_name,
             parameter_name=parameter_name,
             output_key_names=function_output_key_names,
@@ -79,6 +83,7 @@ async def single_setup_openai_chat_completion(
         parameter_name = None
         functions = None
         function_call = None
+        function_system_prompt = None
     async with create_chat_completion_client_session(
         config, is_setup_request=True
     ) as client_session:
@@ -89,6 +94,7 @@ async def single_setup_openai_chat_completion(
             curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,
+            function_system_prompt=function_system_prompt,
         )
     if not response_data.complete:
         raise ParallelParrotError(f"error in single_setup request: {response_data=}")
@@ -122,7 +128,11 @@ async def parallel_openai_chat_completion(
     if function_output_key_names is not None:
         function_name = OPENAI_FUNCTION_NAME
         parameter_name = OPENAI_FUNCTION_PARAMETER_NAME
-        (functions, function_call) = prep_openai_function_list_of_objects(
+        (
+            functions,
+            function_call,
+            function_system_prompt,
+        ) = prep_openai_function_list_of_objects(
             function_name=function_name,
             parameter_name=parameter_name,
             output_key_names=function_output_key_names,
@@ -132,6 +142,7 @@ async def parallel_openai_chat_completion(
         parameter_name = None
         functions = None
         function_call = None
+        function_system_prompt = None
     async with create_chat_completion_client_session(
         config, is_setup_request=False
     ) as client_session:
@@ -158,6 +169,7 @@ async def parallel_openai_chat_completion(
                         curried_prompt_template=curried_prompt_template,
                         functions=functions,
                         function_call=function_call,
+                        function_system_prompt=function_system_prompt,
                     )
                 )
                 for input_row in input_rows
@@ -229,6 +241,7 @@ async def _chat_completion_with_ratelimit(
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Optional[dict] = None,
+    function_system_prompt: Optional[str] = None,
     num_ratelimit_retries: int = 0,
 ) -> OpenAIResponseData:
     global throttle_until_time
@@ -239,6 +252,7 @@ async def _chat_completion_with_ratelimit(
         curried_prompt_template=curried_prompt_template,
         functions=functions,
         function_call=function_call,
+        function_system_prompt=function_system_prompt,
         log_level=logging.DEBUG,
     )
     if response_data.status == 429:
@@ -289,6 +303,7 @@ async def _chat_completion_with_ratelimit(
             curried_prompt_template=curried_prompt_template,
             functions=functions,
             function_call=function_call,
+            function_system_prompt=function_system_prompt,
             num_ratelimit_retries=(num_ratelimit_retries + 1),
         )
     return response_data
@@ -301,6 +316,7 @@ async def do_openai_chat_completion(
     curried_prompt_template: Callable,
     functions: Optional[List[dict]] = None,
     function_call: Optional[dict] = None,
+    function_system_prompt: Optional[str] = None,
     log_level: int = logging.INFO,
 ) -> OpenAIResponseData:
     prompt = curried_prompt_template(input_row)
@@ -309,6 +325,7 @@ async def do_openai_chat_completion(
         prompt=prompt,
         functions=functions,
         function_call=function_call,
+        function_system_prompt=function_system_prompt,
     )
     response_data = await _do_openai_chat_completion(
         client_session=client_session,
@@ -344,6 +361,7 @@ async def do_openai_chat_completion(
                     prompt=truncated_prompt,
                     functions=functions,
                     function_call=function_call,
+                    function_system_prompt=function_system_prompt,
                 )
                 if usage:
                     retry_usage_list.append(usage)

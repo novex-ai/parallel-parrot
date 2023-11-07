@@ -38,12 +38,17 @@ def test_prep_openai_function_list_of_objects():
     ]
     expected_function_call = {"name": function_name}
 
-    functions, function_call = prep_openai_function_list_of_objects(
+    (
+        functions,
+        function_call,
+        function_system_prompt,
+    ) = prep_openai_function_list_of_objects(
         function_name, parameter_name, output_key_names
     )
 
     assert functions == expected_functions
     assert function_call == expected_function_call
+    assert function_system_prompt is not None
 
     with pytest.raises(ParallelParrotError):
         prep_openai_function_list_of_objects(function_name, parameter_name, [])
