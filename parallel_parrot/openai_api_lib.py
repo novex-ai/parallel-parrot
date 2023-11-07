@@ -9,6 +9,7 @@ from .types import (
     OpenAIChatCompletionConfig,
 )
 from .util import logger
+from .util_template import make_curried_prompt_template
 
 
 OPENAI_EMPTY_USAGE_STATS = {
@@ -16,6 +17,12 @@ OPENAI_EMPTY_USAGE_STATS = {
     "completion_tokens": 0,
     "total_tokens": 0,
 }
+
+# must contain "JSON"
+# https://platform.openai.com/docs/guides/text-generation/json-mode
+OPENAI_JSON_MODE_SYSTEM_PROMPT = """
+return a list of objects with keys ${comma_separated_key_names} in JSON format
+"""
 
 
 @dataclass()
@@ -65,8 +72,9 @@ def prep_openai_function_list_of_objects(
     }
     quoted_key_names = [f'"{key}"' for key in output_key_names]
     comma_separated_key_names = ", ".join(quoted_key_names)
-    function_system_prompt = (
-        f"return a list of objects with keys {comma_separated_key_names} in JSON format"
+    template = make_curried_prompt_template(OPENAI_JSON_MODE_SYSTEM_PROMPT)
+    function_system_prompt = template(
+        {"comma_separated_key_names": comma_separated_key_names}
     )
     return (functions, function_call, function_system_prompt)
 
